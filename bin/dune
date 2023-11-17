@@ -1,0 +1,4 @@
+(executable
+ (public_name LittlePurescript)
+ (name main)
+ (libraries LittlePurescript))
