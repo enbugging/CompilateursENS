@@ -23,12 +23,11 @@
         match !stack with
         | (B n) :: s when n > c -> stack := s; RCURLY :: (close n)
         | (B n) :: s when n = c -> stack := s; [SEMICOLON]
-        | _ -> []
+        | _ -> [];
 
     (* Handling of keywords *)
-
-    let keyword_hastable = Hashtbl.create 32 in
-        List.iter (fun (s, token) -> Hashtbl.add keyword_hastable s token)
+    let keyword_hashtable = Hashtbl.create 32 in 
+        List.iter (fun (s, token) -> Hashtbl.add keyword_hashtable s token)
             ["case", CASE;
             "class", CLASS;
             "data", DATA;
@@ -72,7 +71,7 @@
                     end
                 | WHERE | DO | LET | OF -> 
                     begin
-                        let res = close cin 
+                        let res = close c in 
                         if token <> LET then stack := (M :: !stack);
                         if token <> OF then pop_until_marker !stack;
                         res @ [token; LBRACKET]
