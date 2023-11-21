@@ -100,7 +100,7 @@ rule next_tokens = parse
                         let start_position = lexeme_start_p lexbuf in
                         let column = start_position.pos_cnum - start_position.pos_bol in
                         id_or_keyword id column;
-                        weak_mode lexbuf
+                        if id = "where" || id = "of" || id = "let" || id = "of" then weak_mode lexbuf
                     }
     | uident as id  { [UIDENT id] }
     | '+'           { [PLUS] }
