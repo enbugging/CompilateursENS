@@ -108,12 +108,12 @@ rule next_tokens = parse
     | '/'           { [DIVIDE] }
     | '%'           { [MODULO] }
     | '='           { [EQUAL] }
-    | "=="          { [CMP Beq] }
-    | "!="          { [CMP Bne] }
-    | "<"           { [CMP Blt] }
-    | "<="          { [CMP Ble] }
-    | ">"           { [CMP Bgt] }
-    | ">="          { [CMP Bge] }
+    | "=="          { [CMP Equal] }
+    | "!="          { [CMP NotEqual] }
+    | "<"           { [CMP LessThan] }
+    | "<="          { [CMP LessThanOrEqual] }
+    | ">"           { [CMP GreaterThan] }
+    | ">="          { [CMP GreaterThanOrEqual] }
     | "&&"          { [AND] }
     | "||"          { [OR] }
     | "!"           { [NOT] }

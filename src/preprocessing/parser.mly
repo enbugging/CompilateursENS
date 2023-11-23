@@ -202,12 +202,12 @@ branch_star:
     | branch branch_star
 
 %inline binop:
-| PLUS  { Badd }
-| MINUS { Bsub }
-| TIMES { Bmul }
-| DIV   { Bdiv }
-| MOD   { Bmod }
+| PLUS  { Plus }
+| MINUS { Minus }
+| TIMES { Times }
+| DIV   { Divide }
+| MOD   { Modulo }
 | c=CMP { c    }
-| AND   { Band }
-| OR    { Bor  }
+| AND   { Ann }
+| OR    { Or  }
 ;
