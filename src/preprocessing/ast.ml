@@ -7,6 +7,7 @@ type typed =
   | Integer 
   | String
 	| AType of ident
+  | TypeVar of ident
 	| NType of ident * typed list
 
 type constructor = Constructor of typed list
