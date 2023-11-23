@@ -6,6 +6,8 @@ type typed =
   | Boolean 
   | Integer 
   | String
+  | Unit 
+  | Effect of typed
 	| AType of ident
   | TypeVar of ident
 	| NType of ident * typed list
