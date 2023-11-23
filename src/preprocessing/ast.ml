@@ -1,8 +1,10 @@
 (* Abstract syntax tree of Little-PureScript *)
 
-type ident = string
+(* (identifier, number of line, number of column) *)
+type ident = string * int * int
 
-type typed = 
+type typed = ident
+(*
   | Boolean 
   | Integer 
   | String
@@ -11,6 +13,7 @@ type typed =
 	| AType of ident
   | TypeVar of ident
 	| NType of ident * typed list
+*)
 
 type constructor = Constructor of typed list
 
