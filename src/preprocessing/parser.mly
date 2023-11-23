@@ -4,13 +4,13 @@
     open Ast
 %}
 
-%token <Ast.constant_with_position> CONSTANT
-%token <Ast.ident_with_position> LIDENT UIDENT STRING 
-%token <Ast.binaryOperation_with_position> CMP
-%token <int * int> CASE CLASS DATA DO ELSE FALSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN TRUE WHERE
-%token <int * int> EOF
-%token <int * int> LPAREN RPAREN LSQUARE RSQUARE LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING NEWLINE DOT VERTICAL_BAR
-%token <int * int> PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
+%token <Ast.constant> CONSTANT
+%token <string> LIDENT UIDENT STRING 
+%token <Ast.binaryOperation> CMP
+%token CASE CLASS DATA DO ELSE FALSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN TRUE WHERE
+%token EOF
+%token LPAREN RPAREN LSQUARE RSQUARE LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING NEWLINE DOT VERTICAL_BAR
+%token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
 
 /* Priotity and associativity of tokens */
 %left OR
@@ -38,97 +38,121 @@ imports:
       IMPORT (UIDENT "Effect") SEMICOLON 
       IMPORT (UIDENT "Prelude.Console") SEMICOLON 
 
+type_type_lident_star:
+    | { [] }
+    | type_lident=LIDENT type_lident_star=type_lident_star
+        { (TypeIdent type_lident) :: type_lident_star }
+
+decl:
+    | defn=defn
+        { defn }
+    | tdecl=tdecl
+        { tdecl }
+    | DATA name=uident types=type_lident_star EQUAL constructor=constructor constructors=constructor_star
+        { Data name types (constructor::constructors)}
+    | CLASS name=uident types=type_lident_star WHERE LCURLY tdecl_list=tdecl_semicolon_star RCURLY
+        { Class name types tdecl_list }
+    | INSTANCE instance=instance WHERE LCURLY defn_list=defn_semicolon_star RCURLY
+        { Instance instance defn_list }
+
 decls:
     | decl=decl decls=decls
         { decl :: decls }
     | decl=decl
         { [decl] }
 
-lident_star:
+constructor:
+    | u=uident ats=atype_star
+        { Constructor u ats }
+constructor_star:
     | { [] }
-    | lident=LIDENT lident_star=lident_star
-        { lident :: lident_star }
-
-decl:
-    | defn=defn
-        { defn }
-    | tdecl
-    | DATA u1 = uident ls1 = lident_star EQUAL uident atype_star uident_atype_star_star
-        { Data (u1, ls1, u2, ) }
-    | CLASS uident lident_star WHERE LCURLY tdecl_semicolon_star RCURLY
-        {...}
-    | INSTANCE instance WHERE LCURLY defn_semicolon_star RCURLY
-        {...}
-
-uident_atype_star_star:
-    | { () }
-    | VERTICAL_BAR uident atype_star uident_atype_star_star
-        {...}
+    | constructor=constructor constructor_star=constructor_star
+        { constructor :: constructor_star }
 
 defn:
-    | LIDENT patarg_star EQUAL expr
+    | li=LIDENT pts=patarg_star EQUAL e=expr
+        { Definition li pts e }
 
 defn_semicolon_star:
-    | { () }
-    | defn SEMICOLON defn_star
+    | { [] }
+    | defn=defn SEMICOLON defns=defn_semicolon_star
+        { defn::defns }
 
 tdecl:
-    | LIDENT COLON COLON 
-    | LIDENT COLON COLON FORALL lident lident_star DOT
-        {...}
-    | ntype_arrow_star type_branch_star type
-        {...}
+    | name=LIDENT COLON COLON nts=ntype_arrow_star tys=type_branch_star ty=type
+        { TypeDeclaration name [||] nts tys ty }
+    | name=LIDENT COLON COLON FORALL li=lident type_lis=type_lident_star DOT nts=ntype_arrow_star tys=type_branch_star ty=type
+        { TypeDeclaration name ((TypeIdent li)::type_lis) nts tys ty }
 
 tdecl_semicolon_star:
-    | { () }
-    | tdecl SEMICOLON tdecl_star
+    | { [] }
+    | tdecl=tdecl SEMICOLON tdecls=tdecl_star
+        { tdecl::tdecls }
 
 ntype_arrow_star:
-    | { () }
-    | ntype ARROW ntype_arrow_star
+    | { [] }
+    | nt=ntype ARROW nts=ntype_arrow_star
+        { nt::nts }
 
 type_branch_star:
-    | { () }
-    | type BRANCHING type_branch_star
+    | { [] }
+    | ty=type BRANCHING tys=type_branch_star
+        { ty::tys }
 
 ntype:
-    | UIDENT s atype_star
+    | name=UIDENT ats=atype_star
+        { TypeConstructor name ats }
 
 ntype_star:
-    | { () }
-    | COLON ntype ntype_star
+    | { [] }
+    | COLON nt=ntype nts=ntype_star
+        { nt::nts }
 
 atype:
-    | LIDENT
-    | UIDENT
+    | li=LIDENT
+        { TypeIdent li }
+    | ui=UIDENT
+        { TypeIdent ui }
 
 atype_star:
-    | { () }
-    | atype atype_star
+    | { [] }
+    | at=atype ats=atype_star
+        { at::ats }
 
 type:
-    | n = ntype
-        { NType n }
-    | atype
+    | nt = ntype
+        { TypeConstructor nt }
+    | at=atype
+        { TypeIdent at }
 
 instance:
-    | ntype
-    | ntype ARROW ntyp
-    | LPAREN ntype ntype_star RPAREN ARROW ntype
+    | n=ntype
+        { [n] }
+    | n1=ntype ARROW n2=ntype
+        { [n2; n1] }
+    | LPAREN n1=ntype ns=ntype_star RPAREN ARROW n2=ntype
+        { n2::(n1::ns) }
 
 patarg:
-    | CONSTANT
-    | LIDENT
+    | c=CONSTANT
+        { PatargConstant c }
+    | li=LIDENT
+        { PatargIdent li }
     | UIDENT
-    | LPAREN patargs RPAREN
+        { PatargIdent ui }
+    | LPAREN pts=patargs RPAREN
+        { Pattern pts }
 
 patarg_star:
-    | { () }
-    | patarg patarg_star
+    | { [] }
+    | pt=patarg pts=patarg_star
+        { pt::pts }
 
 pattern:
-    | patarg
-    | UIDENT s patarg patarg_star
+    | p=atarg
+        { PatternArgument p }
+    | s=UIDENT pt=patarg pts=patarg_star
+        { PatternConstructor s (pt::pts) }
 
 constant:
     | TRUE 

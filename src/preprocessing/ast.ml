@@ -3,19 +3,13 @@
 (* (identifier, number of line, number of column) *)
 type ident = string
 
-type typed = ident
-(*
-  | Boolean 
-  | Integer 
-  | String
-  | Unit 
-  | Effect of typed
-	| AType of ident
-  | TypeVar of ident
-	| NType of ident * typed list
-*)
+type typed = 
+  | TypeConstructor of ntype
+  | TypeIdent of ident
+and ntype = ident * typed list
 
-type constructor = Constructor of typed list
+(* Constructor (constructor name, list of arguments) *)
+type constructor = Constructor of typed * typed list
 
 type name = Name of ident
 
@@ -38,12 +32,13 @@ type binaryOperation =
 	| GreaterThan
 	| GreaterThanOrEqual
 
-type pattern = ident
-(*
-	| PatternConstant of constant
-	| PatternVariable of ident
-	| PatternConstructor of ident * pattern list
-*)
+type pattern = 
+  | PatternArgument of partag 
+  | PatternConstructor of ident * partag list
+and partag = 
+  | PatargConstant of constant
+  | PatargIdent of ident 
+  | Pattern of pattern list
 
 type expression = 
 	| Constant of constant
