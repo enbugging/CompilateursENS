@@ -39,23 +39,31 @@ imports:
       IMPORT (UIDENT "Prelude.Console") SEMICOLON 
 
 decls:
-    | decl decls
-    | decl
+    | decl=decl decls=decls
+        { decl :: decls }
+    | decl=decl
+        { [decl] }
 
-lidents:
+lident_star:
     | { [] }
-    | LIDENT lidents
+    | lident=LIDENT lident_star=lident_star
+        { lident :: lident_star }
 
 decl:
-    | defn
+    | defn=defn
+        { defn }
     | tdecl
     | DATA uident lident_star EQUAL uident atype_star uident_atype_star_star
+        {...}
     | CLASS uident lident_star WHERE LCURLY tdecl_semicolon_star RCURLY
+        {...}
     | INSTANCE instance WHERE LCURLY defn_semicolon_star RCURLY
+        {...}
 
 uident_atype_star_star:
     | { () }
     | VERTICAL_BAR uident atype_star uident_atype_star_star
+        {...}
 
 defn:
     | LIDENT patarg_star EQUAL expr
@@ -66,8 +74,10 @@ defn_semicolon_star:
 
 tdecl:
     | LIDENT COLON COLON 
-    | LIDENT COLON COLON FORALL lidents DOT
+    | LIDENT COLON COLON FORALL lident lident_star DOT
+        {...}
     | ntype_arrow_star type_branch_star type
+        {...}
 
 tdecl_semicolon_star:
     | { () }
@@ -102,7 +112,7 @@ type:
 
 instance:
     | ntype
-    | ntype ARROW ntype
+    | ntype ARROW ntyp
     | LPAREN ntype ntype_star RPAREN ARROW ntype
 
 patarg:
@@ -122,14 +132,16 @@ pattern:
 constant:
     | TRUE 
     | FALSE
-    | CONSTANT
+    | c = CONSTANT
+        { Integer(c) }
     | STRING
+
 
 atom:
     | constant
     | LIDENT
     | UIDENT
-    | LPAREN expr RPAREN
+    | LPAREN e = expr RPAREN
     | LIDENT COLON COLON type
 
 atom_star:
