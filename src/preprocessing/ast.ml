@@ -2,13 +2,16 @@
 
 type ident = string
 
-type typeVariable = TypeVariable of ident
-type constructor = Constructor of typeVariable list
-type typeDeclaration = ident
-
 type typed = 
+  | Boolean 
+  | Integer 
+  | String
 	| AType of ident
 	| NType of ident * typed list
+
+type constructor = Constructor of typed list
+
+type name = Name of ident
 
 type constant = 
 	| Boolean of bool
@@ -34,14 +37,6 @@ type pattern =
 	| PatternVariable of ident
 	| PatternConstructor of ident * pattern list
 
-type decl =
-	(* Data (newTypename, types of arguments, cases) *)
-	| Data of typeVariable * typeVariable list * constructor list
-	(* Class (clasName, types of arguments, methods) *)
-	| Class of typeVariable * typeVariable list * typeDeclaration list
-	(* Instance (type of class, types of arguments, methods) *)
-	| Instance of typeDeclaration * typeVariable list * typeDeclaration list
-
 type expression = 
 	| Constant of constant
 	| Variable of ident
@@ -53,6 +48,17 @@ type expression =
 	| Let of (ident * expression) list * expression
 	| Case of expression * (pattern * expression) list
 
+type decl =
+  (* Definition *)
+  | Definition of ident * pattern list * expression
+  (* Type declaration *)
+  | TypeDeclaration of ident * typed list * typed list * typed list * typed
+	(* Data (newTypename, types of arguments, cases) *)
+	| Data of name * typed list * constructor list
+	(* Class (name of Class, types of arguments, methods) *)
+	| Class of name * typed list * decl list
+	(* Instance (name of class, types of arguments, methods) *)
+	| Instance of name * typed list * typed * decl list
+
 type import = ident
 type file = File of import list * decl list
-
