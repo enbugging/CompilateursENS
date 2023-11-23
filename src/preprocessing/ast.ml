@@ -1,7 +1,7 @@
 (* Abstract syntax tree of Little-PureScript *)
 
 (* (identifier, number of line, number of column) *)
-type ident = string * int * int
+type ident = string
 
 type typed = ident
 (*
@@ -23,7 +23,6 @@ type constant =
 	| Boolean of bool
 	| Integer of int
 	| String of string
-type constant_with_position = constant * int * int 
 type binaryOperation = 
 	| Plus
 	| Minus
@@ -38,7 +37,6 @@ type binaryOperation =
 	| LessThanOrEqual
 	| GreaterThan
 	| GreaterThanOrEqual
-type binaryOperation_with_position = binaryOperation * int * int
 
 type pattern = ident
 (*
@@ -57,6 +55,7 @@ type expression =
 	| Do of expression list
 	| Let of (ident * expression) list * expression
 	| Case of expression * (pattern * expression) list
+
 
 type decl =
   (* Definition *)
