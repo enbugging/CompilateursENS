@@ -23,6 +23,7 @@ type constant =
 	| Boolean of bool
 	| Integer of int
 	| String of string
+type constant_with_position = constant * int * int 
 type binaryOperation = 
 	| Plus
 	| Minus
@@ -37,11 +38,14 @@ type binaryOperation =
 	| LessThanOrEqual
 	| GreaterThan
 	| GreaterThanOrEqual
+type binaryOperation_with_position = binaryOperation * int * int
 
-type pattern = 
+type pattern = ident
+(*
 	| PatternConstant of constant
 	| PatternVariable of ident
 	| PatternConstructor of ident * pattern list
+*)
 
 type expression = 
 	| Constant of constant

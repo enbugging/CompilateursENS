@@ -4,13 +4,13 @@
     open Ast
 %}
 
-%token <Ast.constant> CONSTANT
-%token <string> LIDENT UIDENT STRING
-%token <Ast.binop> CMP
-%token CASE CLASS DATA DO ELSE FALSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN TRUE WHERE
-%token EOF
-%token LPAREN RPAREN LSQUARE RSQUARE LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING NEWLINE DOT VERTICAL_BAR
-%token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
+%token <Ast.constant_with_position> CONSTANT
+%token <Ast.ident_with_position> LIDENT UIDENT STRING 
+%token <Ast.binaryOperation_with_position> CMP
+%token <int * int> CASE CLASS DATA DO ELSE FALSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN TRUE WHERE
+%token <int * int> EOF
+%token <int * int> LPAREN RPAREN LSQUARE RSQUARE LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING NEWLINE DOT VERTICAL_BAR
+%token <int * int> PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
 
 /* Priotity and associativity of tokens */
 %left OR
@@ -53,8 +53,8 @@ decl:
     | defn=defn
         { defn }
     | tdecl
-    | DATA uident lident_star EQUAL uident atype_star uident_atype_star_star
-        {...}
+    | DATA u1 = uident ls1 = lident_star EQUAL uident atype_star uident_atype_star_star
+        { Data (u1, ls1, u2, ) }
     | CLASS uident lident_star WHERE LCURLY tdecl_semicolon_star RCURLY
         {...}
     | INSTANCE instance WHERE LCURLY defn_semicolon_star RCURLY
@@ -107,7 +107,8 @@ atype_star:
     | atype atype_star
 
 type:
-    | ntype
+    | n = ntype
+        { NType n }
     | atype
 
 instance:
