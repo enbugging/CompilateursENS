@@ -1,3 +1,5 @@
 _build/
 .vscode/
 *.opam
+src/preprocessing/lexer.ml
+sandbox/
