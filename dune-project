@@ -1,4 +1,4 @@
-(lang dune 3.10)
+(lang dune 2.1)
 (using menhir 2.0)
 (wrapped_executables false)
 

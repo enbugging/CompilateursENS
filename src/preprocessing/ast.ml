@@ -8,10 +8,10 @@ type typed =
   | TypeIdent of ident
 and ntype = ident * typed list
 
-(* Constructor (constructor name, list of arguments) *)
-type constructor = Constructor of typed * typed list
-
 type name = Name of ident
+
+(* Constructor (constructor name, list of arguments) *)
+type constructor = Constructor of name * typed list
 
 type constant = 
 	| Boolean of bool
@@ -33,12 +33,12 @@ type binaryOperation =
 	| GreaterThanOrEqual
 
 type pattern = 
-  | PatternArgument of partag 
-  | PatternConstructor of ident * partag list
-and partag = 
+  | PatternArgument of patarg 
+  | PatternConstructor of ident * patarg list
+and patarg = 
   | PatargConstant of constant
   | PatargIdent of ident 
-  | Pattern of pattern list
+  | Pattern of pattern 
 
 type expression = 
 	| Constant of constant
@@ -54,7 +54,7 @@ type expression =
 
 type decl =
   (* Definition *)
-  | Definition of ident * pattern list * expression
+  | Definition of ident * patarg list * expression
   (* Type declaration *)
   | TypeDeclaration of ident * typed list * typed list * typed list * typed
 	(* Data (newTypename, types of arguments, cases) *)
@@ -62,7 +62,7 @@ type decl =
 	(* Class (name of Class, types of arguments, methods) *)
 	| Class of name * typed list * decl list
 	(* Instance (name of class, types of arguments, methods) *)
-	| Instance of name * typed list * typed * decl list
+	| Instance of ntype list * decl list
 
 type import = ident
 type file = File of import list * decl list

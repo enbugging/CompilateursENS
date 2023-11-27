@@ -2,3 +2,7 @@
  (modules lexer))
 (menhir
  (modules parser))
+(executable
+ (name analyseur_syntaxique)
+ (promote (until-clean))
+ (flags ()))

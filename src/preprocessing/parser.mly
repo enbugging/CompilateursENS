@@ -31,14 +31,16 @@
 %%
 
 file:
-    | MODULE (UIDENT "Main") WHERE LCURLY imports decls SEMICOLON RCURLY EOF
+    | MODULE UIDENT WHERE LCURLY i=imports d=decls SEMICOLON RCURLY EOF
+    {File (i, d)}
 
 imports:
-    | IMPORT (UIDENT "Prelude") SEMICOLON 
-      IMPORT (UIDENT "Effect") SEMICOLON 
-      IMPORT (UIDENT "Prelude.Console") SEMICOLON 
+    | IMPORT UIDENT SEMICOLON 
+      IMPORT UIDENT SEMICOLON 
+      IMPORT UIDENT SEMICOLON 
+      {["Prelude";"Effect";"Prelude.Console"]}
 
-type_type_lident_star:
+type_lident_star:
     | { [] }
     | type_lident=LIDENT type_lident_star=type_lident_star
         { (TypeIdent type_lident) :: type_lident_star }
@@ -48,12 +50,12 @@ decl:
         { defn }
     | tdecl=tdecl
         { tdecl }
-    | DATA name=uident types=type_lident_star EQUAL constructor=constructor constructors=constructor_star
-        { Data name types (constructor::constructors)}
-    | CLASS name=uident types=type_lident_star WHERE LCURLY tdecl_list=tdecl_semicolon_star RCURLY
-        { Class name types tdecl_list }
+    | DATA name=UIDENT types=type_lident_star EQUAL constructor=constructor constructors=constructor_star
+        { Data (Name name, types, (constructor::constructors))}
+    | CLASS name=UIDENT types=type_lident_star WHERE LCURLY tdecl_list=tdecl_semicolon_star RCURLY
+        { Class (Name name, types, tdecl_list) }
     | INSTANCE instance=instance WHERE LCURLY defn_list=defn_semicolon_star RCURLY
-        { Instance instance defn_list }
+        { Instance (instance, defn_list) }
 
 decls:
     | decl=decl decls=decls
@@ -62,8 +64,8 @@ decls:
         { [decl] }
 
 constructor:
-    | u=uident ats=atype_star
-        { Constructor u ats }
+    | u=UIDENT ats=atype_star
+        { Constructor (Name u, ats) }
 constructor_star:
     | { [] }
     | constructor=constructor constructor_star=constructor_star
@@ -71,7 +73,7 @@ constructor_star:
 
 defn:
     | li=LIDENT pts=patarg_star EQUAL e=expr
-        { Definition li pts e }
+        { Definition (li, pts, e) }
 
 defn_semicolon_star:
     | { [] }
@@ -79,29 +81,29 @@ defn_semicolon_star:
         { defn::defns }
 
 tdecl:
-    | name=LIDENT COLON COLON nts=ntype_arrow_star tys=type_branch_star ty=type
-        { TypeDeclaration name [||] nts tys ty }
-    | name=LIDENT COLON COLON FORALL li=lident type_lis=type_lident_star DOT nts=ntype_arrow_star tys=type_branch_star ty=type
-        { TypeDeclaration name ((TypeIdent li)::type_lis) nts tys ty }
+    | name=LIDENT COLON COLON nts=ntype_arrow_star tys=type_branch_star ty=typed
+        { TypeDeclaration (name, [], nts, tys, ty) }
+    | name=LIDENT COLON COLON FORALL li=LIDENT type_lis=type_lident_star DOT nts=ntype_arrow_star tys=type_branch_star ty=typed
+        { TypeDeclaration (name, ((TypeIdent li)::type_lis), nts, tys, ty) }
 
 tdecl_semicolon_star:
     | { [] }
-    | tdecl=tdecl SEMICOLON tdecls=tdecl_star
+    | tdecl=tdecl SEMICOLON tdecls=tdecl_semicolon_star
         { tdecl::tdecls }
 
 ntype_arrow_star:
     | { [] }
-    | nt=ntype ARROW nts=ntype_arrow_star
-        { nt::nts }
+    | t=typed ARROW ts=ntype_arrow_star
+        { t::ts }
 
 type_branch_star:
     | { [] }
-    | ty=type BRANCHING tys=type_branch_star
+    | ty=typed BRANCHING tys=type_branch_star
         { ty::tys }
 
 ntype:
     | name=UIDENT ats=atype_star
-        { TypeConstructor name ats }
+        { (name, ats) }
 
 ntype_star:
     | { [] }
@@ -113,13 +115,15 @@ atype:
         { TypeIdent li }
     | ui=UIDENT
         { TypeIdent ui }
+    | LPAREN t = typed RPAREN
+    {t}
 
 atype_star:
     | { [] }
     | at=atype ats=atype_star
-        { at::ats }
+        { at :: ats }
 
-type:
+typed:
     | nt = ntype
         { TypeConstructor nt }
     | at=atype
@@ -138,9 +142,9 @@ patarg:
         { PatargConstant c }
     | li=LIDENT
         { PatargIdent li }
-    | UIDENT
+    | ui=UIDENT
         { PatargIdent ui }
-    | LPAREN pts=patargs RPAREN
+    | LPAREN pts=pattern RPAREN
         { Pattern pts }
 
 patarg_star:
@@ -149,65 +153,86 @@ patarg_star:
         { pt::pts }
 
 pattern:
-    | p=atarg
+    | p=patarg
         { PatternArgument p }
     | s=UIDENT pt=patarg pts=patarg_star
-        { PatternConstructor s (pt::pts) }
+        { PatternConstructor (s, (pt::pts)) }
 
 constant:
     | TRUE 
+    {Boolean true}
     | FALSE
+    {Boolean false}
     | c = CONSTANT
-        { Integer(c) }
-    | STRING
-
+        { c }
 
 atom:
-    | constant
-    | LIDENT
-    | UIDENT
+    | c = constant
+    { Constant c}
+    | lident=LIDENT
+    { Variable lident}
+    | uident=UIDENT
+    {TypeIdent = uident}
     | LPAREN e = expr RPAREN
-    | LIDENT COLON COLON type
+    { e }
+    | lident = LIDENT COLON COLON t=typed
+    {TypedExpression (Variable lident, t)}
 
 atom_star:
     | { () }
-    | atom atom_star
+    | a = atom a_s = atom_star
+    { a :: a_s }
 
 expr:
-    | atom 
-    | MINUS expr %prec unary_minus
-    | expr binop expr
-    | LPAREN (LIDENT | UIDENT) RPAREN atom atom_star
-    | IF expr THEN expr ELSE expr
-    | DO LCURLY expr_star RCURLY
-    | LET LCURLY binding binding_star RCURLY IN expr
-    | CASE expr OF LCURLY branch branch_star RCURLY
+    |a = atom 
+    { a }
+    | MINUS e = expr %prec unary_minus
+    {BinaryOperation (Constant(Integer 0), Minus, e)}
+    | e1 = expr b = binop e2 = expr
+    {BinaryOperation (e1,b,e2)}
+    | LPAREN lident=LIDENT RPAREN a = atom a_s = atom_star
+    { FunctionCall (lident, a :: a_s) }
+    | LPAREN uident=UIDENT RPAREN a = atom a_s = atom_star
+    { FunctionCall (uident, a :: a_s) }
+    | IF e1 = expr THEN e2 = expr ELSE e3 =expr
+    {Conditional (e1,e2,e3)}
+    | DO LCURLY e = expr_star RCURLY
+    {Do e}
+    | LET LCURLY b = binding b_s = binding_star RCURLY IN e = expr
+    {Let (b :: b_s, e)}
+    | CASE e = expr OF LCURLY b = branch b_s = branch_star RCURLY
+    {Case (e, b::b_s)}
 
 expr_star:
-    | { () }
-    | expr expr_star
+    | { [] }
+    | e = expr e_s = expr_star
+    { e :: e_s }
 
 binding:
-    | LIDENT EQUAL expr
+    | lident=LIDENT EQUAL e = expr
+    { (lident,e) }
 
 binding_star:
-    | { () }
-    | binding binding_star
+    | { [] }
+    | b = binding b_s = binding_star
+    {b :: b_s}
 
 branch:
-    | pattern BRANCHING expr
+    | p = pattern BRANCHING e = expr
+    {(p,e)}
 
 branch_star:
-    | { () }
-    | branch branch_star
+    | { [] }
+    | b = branch b_s = branch_star
+    {b :: b_s}
 
 %inline binop:
 | PLUS  { Plus }
 | MINUS { Minus }
 | TIMES { Times }
-| DIV   { Divide }
-| MOD   { Modulo }
+| DIVIDE   { Divide }
+| MODULO   { Modulo }
 | c=CMP { c    }
-| AND   { Ann }
+| AND   { And }
 | OR    { Or  }
 ;
