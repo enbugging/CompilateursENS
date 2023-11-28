@@ -170,18 +170,18 @@ constant:
 
 atom:
     | c = constant
-    { Constant c}
+    { Constant c }
     | lident=LIDENT
-    { Variable lident}
+    { Variable lident }
     | uident=UIDENT
-    {TypeIdent = uident}
+    { Variable uident }
     | LPAREN e = expr RPAREN
     { e }
     | lident = LIDENT COLON COLON t=typed
     {TypedExpression (Variable lident, t)}
 
 atom_star:
-    | { () }
+    | { [] }
     | a = atom a_s = atom_star
     { a :: a_s }
 
