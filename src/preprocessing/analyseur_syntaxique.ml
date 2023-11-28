@@ -30,32 +30,26 @@ let report (b,e) =
   let lc = e.pos_cnum - b.pos_bol + 1 in
   eprintf "File \"%s\", line %d, characters %d-%d:\n" file l fc lc
 
-let test lb =
-        while true do
-                let f = Lexer.next_token lb in
-                print_endline "Le lexem a été lu";
-                let _ = print_string (match f with
-                | EQUAL -> "EQUAL"
-                | CASE -> "CASE"
-                | LIDENT s -> s
-                | UIDENT s -> s
-                | BRANCHING -> "->"
-                | OF -> "OF"
-                | EOF -> "\n"
-                | MODULE -> "MODULE"
-                | IMPORT -> "IMPORT"
-                | WHERE -> "WHERE"
-        ) in print_char ' '
-        done
-
 let () =
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
-          print_endline "Commence";
-          test lb;
-          print_endline "fin";
-          close_in c;
-          if !parse_only then exit 0;
+    let f = Parser.file Lexer.next_token lb in
+    close_in c;
+    if !parse_only then exit 0;
   with
-    | _ -> print_string "Echec"; exit 1
+    | Lexer.Illegal_character s ->
+	report (lexeme_start_p lb, lexeme_end_p lb);
+	eprintf "lexical error: %c@." s;
+        exit 1
+    | Lexer.Undetermined_string ->
+                    print_string "Undetermined_string";
+	exit 1
+    | Parser.Error ->
+	report (lexeme_start_p lb, lexeme_end_p lb);
+	eprintf "syntax error@.";
+	exit 1
+    | e ->
+	eprintf "Anomaly: %s\n@." (Printexc.to_string e);
+	exit 2
+
