@@ -129,7 +129,7 @@ typed:
     | nt = ntype
         { TypeConstructor nt }
     | at=atype
-        { TypeIdent at }
+        { at }
 
 instance:
     | n=ntype
