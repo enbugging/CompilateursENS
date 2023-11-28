@@ -11,6 +11,8 @@
     exception Undetermined_string
     exception Bad_indentation
 
+    let is_weak_mode = ref false
+
     (* Handling of significant indentation *)
     type indentation = 
         | B of int (* block *)
@@ -21,40 +23,55 @@
     let stack = ref [(B 0)] (* indentation stack *)
     let rec close c = 
         match !stack with
-        | (B n) :: s when n > c -> stack := s; RCURLY :: (close n)
-        | (B n) :: s when n = c -> stack := s; [SEMICOLON]
-        | _ -> [];
+        | (B n) :: s when n > c ->
+            begin
+                if !is_weak_mode then stack := s;
+                RCURLY :: (close n) 
+            end
+        | (B n) :: s when n = c -> 
+            begin
+                if !is_weak_mode then stack := s;
+                [SEMICOLON]
+            end
+        | _ -> []
 
     (* Handling of keywords *)
-    let keyword_hashtable = Hashtbl.create 32 in 
-        List.iter (fun (s, token) -> Hashtbl.add keyword_hashtable s token)
-            ["case", CASE;
-            "class", CLASS;
-            "data", DATA;
-            "do", DO;
-            "else", ELSE;
-            "false", FALSE;
-            "forall", FORALL;
-            "if", IF;
-            "import", IMPORT;
-            "in", IN;
-            "instance", INSTANCE;
-            "let", LET;
-            "module", MODULE;
-            "of", OF;
-            "then", THEN;
-            "true", TRUE;
-            "where", WHERE]
+    let keyword_hashtable = Hashtbl.create 32
+
+    let _ = List.iter (fun (s, token) -> Hashtbl.add keyword_hashtable s token)
+        ["case", CASE;
+        "class", CLASS;
+        "data", DATA;
+        "do", DO;
+        "else", ELSE;
+        "false", FALSE;
+        "forall", FORALL;
+        "if", IF;
+        "import", IMPORT;
+        "in", IN;
+        "instance", INSTANCE;
+        "let", LET;
+        "module", MODULE;
+        "of", OF;
+        "then", THEN;
+        "true", TRUE;
+        "where", WHERE]
 
     let id_or_keyword s c = 
         try 
+            let _ = if !is_weak_mode then 
+                begin
+                    is_weak_mode := false;
+                    stack := (B c) :: !stack
+                end
+            in
             let rec pop_until_marker = function
                 | M :: s -> stack := s
                 | _ :: s -> pop_until_marker s
-                | [] -> raise Bad_identation
+                | [] -> raise Bad_indentation
             in
             (* Algorithm to handle significant indentation (cf. Section 1.2 in sujet-v2.pdf) *)
-            let token = Hashtbl.find keyword_hastable s in
+            let token = Hashtbl.find keyword_hashtable s in
                 match token with
                 | IF | LPAREN | CASE -> 
                     begin
@@ -74,10 +91,11 @@
                         let res = close c in 
                         if token <> LET then stack := (M :: !stack);
                         if token <> OF then pop_until_marker !stack;
-                        res @ [token; LBRACKET]
+                        is_weak_mode := true;
+                        res @ [token; LCURLY]
                     end
                 | _ -> [token] @ (close c)
-        with Not_found -> LIDENT s
+        with Not_found -> [LIDENT s]
 }
 
 let digit = ['0'-'9']
@@ -92,14 +110,13 @@ let space = ' ' | '\t'
 let line_comment = "--" [^ '\n']*
 
 rule next_tokens = parse 
-    | '\n'          { new_line lexbuf }
+    | '\n'          { new_line lexbuf; [NEWLINE] }
     | (space | line_comment)+
                     { next_tokens lexbuf }
-    | lident as id   {
+    | lident as id  {
                         let start_position = lexeme_start_p lexbuf in
                         let column = start_position.pos_cnum - start_position.pos_bol in
-                        id_or_keyword id column;
-                        if id = "where" || id = "of" || id = "let" || id = "of" then weak_mode lexbuf
+                        id_or_keyword id column
                     }
     | uident as id  { [UIDENT id] }
     | '+'           { [PLUS] }
@@ -123,32 +140,20 @@ rule next_tokens = parse
     | ')'           { [RPAREN] }
     | '{'           { [LCURLY] }
     | '}'           { [RCURLY] }
-    | '['           { [LBRACKET] }
-    | ']'           { [RBRACKET] }
+    | '['           { [LSQUARE] }
+    | ']'           { [RSQUARE] }
     | ','           { [COMMA] }
     | ':'           { [COLON] }
     | '.'           { [DOT] }
     | '|'           { [VERTICAL_BAR] }
     | ';'           { [SEMICOLON] }
-    | integer as s  { try [CONSTANT (Cint (int_of_string s))]
-                        with _ -> raise Integer_overflow }
-    | '"'           { string_buffer := ""; string lexbuf }
+    | integer as s  { [CONSTANT (Integer (int_of_string s))] }
+    | '"'           { [CONSTANT (String (string lexbuf))] }
     | eof           { [EOF] }
     | _ as c        { raise (Illegal_character c) }
 
-and weak_mode = parse 
-    | lident as id   {
-                        let start_position = lexeme_start_p lexbuf in
-                        let cp = start_position.pos_cnum - start_position.pos_bol in
-                        close cp;
-                        stack := (B cp) :: !stack;
-                        id_or_keyword id cp;
-                        weak_mode lexbuf    
-                    }
-    | _             { next_tokens lexbuf }
-
 and string = parse 
-    | '"'           { let s = Buffer.contents string_buffer in Buffer.reset string_buffer; STRING s }
+    | '"'           { let s = Buffer.contents string_buffer in Buffer.reset string_buffer; s }
     | "\\n"         { Buffer.add_char string_buffer '\n'; string lexbuf }
     | "\\\""        { Buffer.add_char string_buffer '"'; string lexbuf }
     | _ as c        { Buffer.add_char string_buffer c; string lexbuf }
@@ -161,7 +166,7 @@ and string = parse
             if Queue.is_empty tokens then 
                 begin
                     let new_tokens = next_tokens lexbuf in
-                        List.iter (fun t -> Queue.add t new_tokens) new_tokens;
+                        List.iter (fun t -> Queue.add t tokens) new_tokens;
                 end;
             Queue.pop tokens
 }
