@@ -50,6 +50,8 @@ decl:
         { defn }
     | tdecl=tdecl
         { tdecl }
+    | DATA name=UIDENT types=type_lident_star EQUAL constructor=constructor
+        { Data (Name name, types, [constructor])}
     | DATA name=UIDENT types=type_lident_star EQUAL constructor=constructor constructors=constructor_star
         { Data (Name name, types, (constructor::constructors))}
     | CLASS name=UIDENT types=type_lident_star WHERE LCURLY tdecl_list=tdecl_semicolon_star RCURLY
@@ -68,7 +70,7 @@ constructor:
         { Constructor (Name u, ats) }
 constructor_star:
     | { [] }
-    | constructor=constructor constructor_star=constructor_star
+    | VERTICAL_BAR constructor=constructor constructor_star=constructor_star
         { constructor :: constructor_star }
 
 defn:
@@ -116,7 +118,7 @@ atype:
     | ui=UIDENT
         { TypeIdent ui }
     | LPAREN t = typed RPAREN
-    {t}
+        { t }
 
 atype_star:
     | { [] }
