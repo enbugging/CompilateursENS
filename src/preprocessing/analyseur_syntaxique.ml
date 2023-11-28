@@ -17,8 +17,8 @@ let spec =
 let file =
   let file = ref None in
   let set_file s =
-    if not (Filename.check_suffix s ".py") then
-      raise (Arg.Bad "no .py extension");
+    if not (Filename.check_suffix s ".purs") then
+      raise (Arg.Bad "no .purs extension");
     file := Some s
   in
   Arg.parse spec set_file usage;
@@ -30,29 +30,32 @@ let report (b,e) =
   let lc = e.pos_cnum - b.pos_bol + 1 in
   eprintf "File \"%s\", line %d, characters %d-%d:\n" file l fc lc
 
+let test lb =
+        while true do
+                let f = Lexer.next_token lb in
+                print_endline "Le lexem a été lu";
+                let _ = print_string (match f with
+                | EQUAL -> "EQUAL"
+                | CASE -> "CASE"
+                | LIDENT s -> s
+                | UIDENT s -> s
+                | BRANCHING -> "->"
+                | OF -> "OF"
+                | EOF -> "\n"
+                | MODULE -> "MODULE"
+                | IMPORT -> "IMPORT"
+                | WHERE -> "WHERE"
+        ) in print_char ' '
+        done
+
 let () =
   let c = open_in file in
   let lb = Lexing.from_channel c in
   try
-    let f = Parser.file Lexer.next_token lb in
-    close_in c;
-    if !parse_only then exit 0;
-    Interp.file f
+          print_endline "Commence";
+          test lb;
+          print_endline "fin";
+          close_in c;
+          if !parse_only then exit 0;
   with
-    | Lexer.Lexing_error s ->
-	report (lexeme_start_p lb, lexeme_end_p lb);
-	eprintf "lexical error: %s@." s;
-	exit 1
-    | Parser.Error ->
-	report (lexeme_start_p lb, lexeme_end_p lb);
-	eprintf "syntax error@.";
-	exit 1
-    | Interp.Error s ->
-	eprintf "error: %s@." s;
-	exit 1
-    | e ->
-	eprintf "Anomaly: %s\n@." (Printexc.to_string e);
-	exit 2
-
-
-
+    | _ -> print_string "Echec"; exit 1
