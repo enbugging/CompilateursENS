@@ -5,11 +5,11 @@
 %}
 
 %token <Ast.constant> CONSTANT
-%token <string> LIDENT UIDENT STRING 
+%token <string> LIDENT UIDENT 
 %token <Ast.binaryOperation> CMP
 %token CASE CLASS DATA DO ELSE FALSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN TRUE WHERE
 %token EOF
-%token LPAREN RPAREN LSQUARE RSQUARE LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING NEWLINE DOT VERTICAL_BAR
+%token LPAREN RPAREN LSQUARE RSQUARE LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING DOT VERTICAL_BAR
 %token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
 
 /* Priotity and associativity of tokens */
@@ -190,6 +190,8 @@ expr:
     { a }
     | MINUS e = expr %prec unary_minus
     {BinaryOperation (Constant(Integer 0), Minus, e)}
+    | NOT e = expr
+    {UnaryOperation (Not, e)}
     | e1 = expr b = binop e2 = expr
     {BinaryOperation (e1,b,e2)}
     | LPAREN lident=LIDENT RPAREN a = atom a_s = atom_star
