@@ -3,3 +3,4 @@ _build/
 *.opam
 src/preprocessing/lexer.ml
 sandbox/
+*.exe

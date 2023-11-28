@@ -5,8 +5,6 @@
     open Parser
     open Ast
 
-    exception Bad_ident
-    exception Integer_overflow
     exception Illegal_character of char
     exception Undetermined_string
     exception Bad_indentation
@@ -20,7 +18,7 @@
 
     let string_buffer = Buffer.create 1024
 
-    let stack = ref [(B 0)] (* indentation stack *)
+    let stack = ref [] (* indentation stack *)
     let rec close c = 
         match !stack with
         | (B n) :: s when n > c ->
@@ -59,6 +57,7 @@
 
     let id_or_keyword s c = 
         try 
+            print_int c;
             let _ = if !is_weak_mode then 
                 begin
                     is_weak_mode := false;
@@ -94,8 +93,10 @@
                         is_weak_mode := true;
                         res @ [token; LCURLY]
                     end
-                | _ -> [token] @ (close c)
-        with Not_found -> [LIDENT s]
+                | _ -> (close c) @ [token]
+      with 
+        | Not_found -> [LIDENT s]
+        | Bad_indentation -> raise (Bad_indentation)
 }
 
 let digit = ['0'-'9']
@@ -116,7 +117,7 @@ rule next_tokens = parse
     | lident as id  {
                         let start_position = lexeme_start_p lexbuf in
                         let column = start_position.pos_cnum - start_position.pos_bol in
-                        id_or_keyword id column
+                        id_or_keyword id column;
                     }
     | uident as id  { [UIDENT id] }
     | '+'           { [PLUS] }
@@ -149,7 +150,7 @@ rule next_tokens = parse
     | ';'           { [SEMICOLON] }
     | integer as s  { [CONSTANT (Integer (int_of_string s))] }
     | '"'           { [CONSTANT (String (string lexbuf))] }
-    | eof           { [EOF] }
+    | eof           { close (-1); [EOF] }
     | _ as c        { raise (Illegal_character c) }
 
 and string = parse 
