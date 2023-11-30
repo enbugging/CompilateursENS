@@ -146,10 +146,10 @@ expr:
     {UnaryOperation (Not, e)}
     | e1 = expr b = binop e2 = expr
     {BinaryOperation (e1,b,e2)}
-    | LPAREN lident=LIDENT RPAREN a_s = nonempty_list(atom)
+    | lident=LIDENT a_s = nonempty_list(atom)
     { FunctionCall (lident, a_s) }
-    | LPAREN uident=UIDENT RPAREN a_s = nonempty_list(atom)
-    { FunctionCall (uident, a_s) }
+    | uident=UIDENT a_s = nonempty_list(atom)
+    { ExplicitConstructor (uident, a_s) }
     | IF e1 = expr THEN e2 = expr ELSE e3 =expr
     {Conditional (e1,e2,e3)}
     | DO LCURLY es = separated_nonempty_list(SEMICOLON, expr) RCURLY

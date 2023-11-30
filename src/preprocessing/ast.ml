@@ -50,6 +50,7 @@ type expression =
 	| TypedExpression of expression * typed
 	| BinaryOperation of expression * binaryOperation * expression
 	| Conditional of expression * expression * expression
+  | ExplicitConstructor of ident * expression list
 	| FunctionCall of ident * expression list
 	| Do of expression list
 	| Let of (ident * expression) list * expression
