@@ -40,9 +40,12 @@ and patarg =
   | PatargIdent of ident 
   | Pattern of pattern 
 
+type unaryOperation = Not
+
 type expression = 
 	| Constant of constant
 	| Variable of ident
+  | UnaryOperation of unaryOperation * expression
 	| TypedExpression of expression * typed
 	| BinaryOperation of expression * binaryOperation * expression
 	| Conditional of expression * expression * expression
