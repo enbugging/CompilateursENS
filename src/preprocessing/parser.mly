@@ -58,8 +58,12 @@ defn:
         { Definition (li, pts, e) }
 
 tdecl:
+    | name=LIDENT COLON COLON tys=separated_nonempty_list(BRANCHING, typed)
+        { TypeDeclaration (name, [], [], tys) }
     | name=LIDENT COLON COLON nts=terminated(typed, ARROW)* tys=separated_nonempty_list(BRANCHING, typed)
         { TypeDeclaration (name, [], nts, tys) }
+    | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT tys=separated_nonempty_list(BRANCHING, typed)
+        { TypeDeclaration (name, lis, [], tys) }
     | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT nts=terminated(typed, ARROW)* tys=separated_nonempty_list(BRANCHING, typed)
         { TypeDeclaration (name, lis, nts, tys) }
 
