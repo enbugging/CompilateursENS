@@ -5,6 +5,7 @@
     open Parser
     open Ast
 
+    exception Unterminated_comment
     exception Illegal_character of char
     exception Undetermined_string
     exception Bad_indentation
@@ -50,6 +51,7 @@ let space = ' ' | '\t'
 let line_comment = "--" [^ '\n']*
 
 rule next_tokens = parse 
+    | "{-"          { comment lexbuf }
     | ('\n'|"\r\n") { new_line lexbuf; next_tokens lexbuf }
     | (space | line_comment)+
                     { next_tokens lexbuf }
@@ -92,6 +94,11 @@ and string = parse
     | "\\\""        { Buffer.add_char string_buffer '"'; string lexbuf }
     | _ as c        { Buffer.add_char string_buffer c; string lexbuf }
     | eof           { raise Undetermined_string }
+
+and comment = parse
+    | "-}"          { next_tokens lexbuf }
+    | _             { comment lexbuf }
+    | eof           { raise Unterminated_comment }
 
 {   
     let tokens = Queue.create () 
