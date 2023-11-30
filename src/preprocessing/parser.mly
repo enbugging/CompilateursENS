@@ -30,7 +30,7 @@
 %%
 
 file:
-    | MODULE UIDENT WHERE LCURLY i=list(delimited(IMPORT, UIDENT, SEMICOLON)) d=separated_nonempty_list(SEMICOLON, decl) RCURLY EOF
+    | MODULE UIDENT WHERE LCURLY i=delimited(IMPORT, UIDENT, SEMICOLON)* d=separated_nonempty_list(SEMICOLON, decl) RCURLY EOF
     {File (i, d)}
 
 type_lident:
@@ -58,14 +58,10 @@ defn:
         { Definition (li, pts, e) }
 
 tdecl:
-    | name=LIDENT COLON COLON nts=ntype_arrow* tys=separated_nonempty_list(BRANCHING, typed)
+    | name=LIDENT COLON COLON nts=terminated(typed, ARROW)* tys=separated_nonempty_list(BRANCHING, typed)
         { TypeDeclaration (name, [], nts, tys) }
-    | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT nts=ntype_arrow* tys=separated_nonempty_list(BRANCHING, typed)
+    | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT nts=terminated(typed, ARROW)* tys=separated_nonempty_list(BRANCHING, typed)
         { TypeDeclaration (name, lis, nts, tys) }
-
-ntype_arrow:
-    | t=typed ARROW
-        { t }
 
 ntype:
     | name=UIDENT 
@@ -124,7 +120,7 @@ atom:
     { Variable uident }
     | LPAREN e = expr RPAREN
     { e }
-    | lident = LIDENT COLON COLON t=typed
+    | LPAREN lident = LIDENT COLON COLON t=typed RPAREN
     {TypedExpression (Variable lident, t)}
 
 expr:
