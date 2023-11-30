@@ -10,7 +10,7 @@
 %token CASE CLASS DATA DO ELSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN WHERE
 %token EOF
 %token LPAREN RPAREN LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING DOT VERTICAL_BAR
-%token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
+%token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT CONCATENATE
 
 /* Priotity and associativity of tokens */
 %left OR
@@ -154,12 +154,13 @@ branch:
     {(p,e)}
 
 %inline binop:
-| PLUS  { Plus }
-| MINUS { Minus }
-| TIMES { Times }
-| DIVIDE   { Divide }
-| MODULO   { Modulo }
-| c=CMP { c    }
-| AND   { And }
-| OR    { Or  }
+| PLUS          { Plus }
+| MINUS         { Minus }
+| TIMES         { Times }
+| DIVIDE        { Divide }
+| MODULO        { Modulo }
+| c=CMP         { c    }
+| AND           { And }
+| OR            { Or  }
+| CONCATENATE   { Concatenate }
 ;

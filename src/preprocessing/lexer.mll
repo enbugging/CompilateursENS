@@ -62,9 +62,10 @@ rule next_tokens = parse
     | '*'           { TIMES }
     | '/'           { DIVIDE }
     | '%'           { MODULO }
+    | "<>"          { CONCATENATE }
     | '='           { EQUAL }
     | "=="          { CMP Equal }
-    | "!="          { CMP NotEqual }
+    | "/="          { CMP NotEqual }
     | "<"           { CMP LessThan }
     | "<="          { CMP LessThanOrEqual }
     | ">"           { CMP GreaterThan }
@@ -196,6 +197,8 @@ and comment = parse
             | DO -> print_string "Do\n"
             | LPAREN -> print_string "Lparen\n"
             | RPAREN -> print_string "Rparen\n"
+            | BRANCHING -> print_string "Branching\n"
+            | COLON -> print_string "Colon\n"
             | _ -> print_string "Other\n"
         end; t
         *)

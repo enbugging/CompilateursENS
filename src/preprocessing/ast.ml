@@ -26,6 +26,7 @@ type binaryOperation =
 	| Modulo
 	| And 
 	| Or
+  | Concatenate
 	| Equal
 	| NotEqual
 	| LessThan
