@@ -118,10 +118,6 @@ pattern:
         { PatternConstructor (s, pts) }
 
 constant:
-    | TRUE 
-    {Boolean true}
-    | FALSE
-    {Boolean false}
     | c = CONSTANT
         { c }
 

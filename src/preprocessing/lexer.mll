@@ -25,7 +25,7 @@
         "data", DATA;
         "do", DO;
         "else", ELSE;
-        "false", FALSE;
+        "false", CONSTANT (Boolean false);
         "forall", FORALL;
         "if", IF;
         "import", IMPORT;
@@ -35,7 +35,7 @@
         "module", MODULE;
         "of", OF;
         "then", THEN;
-        "true", TRUE;
+        "true", CONSTANT (Boolean true);
         "where", WHERE]
 }
 
@@ -115,7 +115,7 @@ and comment = parse
         match !stack with
         | M :: s -> stack := s
         | (B _) :: s -> Queue.add RCURLY tokens; stack := s; pop_until_marker ()
-        | [] -> raise Bad_indentation
+        | [] -> ()
     let rec print_stack l = 
         match l with 
         | M :: s -> print_string "M|"; print_stack s
@@ -143,11 +143,11 @@ and comment = parse
                     try 
                         let token = Hashtbl.find keyword_hashtable id in
                         match token with 
-                        | IF | LPAREN | CASE -> 
+                        | IF | CASE -> 
                             if !is_weak_mode then is_weak_mode := false else close column;
                             stack := M :: !stack;
                             Queue.add token tokens
-                        | RPAREN | THEN | ELSE | IN -> 
+                        | THEN | ELSE | IN -> 
                             pop_until_marker ();
                             if token = THEN then stack := M :: !stack;
                             Queue.add token tokens
@@ -159,14 +159,19 @@ and comment = parse
                             Queue.add LCURLY tokens;
                             about_weak_mode := true
                         | _ -> 
-                            begin
-                                if !is_weak_mode then is_weak_mode := false else close column;
-                                Queue.add token tokens
-                            end
+                            if !is_weak_mode then is_weak_mode := false else close column;
+                            Queue.add token tokens
                     with 
                         | Not_found -> if !is_weak_mode then is_weak_mode := false else close column; Queue.add new_token tokens
                         | Bad_indentation -> raise Bad_indentation
                     end
+                | LPAREN -> 
+                    if !is_weak_mode then is_weak_mode := false else close column;
+                    stack := M :: !stack;
+                    Queue.add LPAREN tokens
+                | RPAREN ->
+                    pop_until_marker ();
+                    Queue.add RPAREN tokens
                 | EOF -> if !is_weak_mode then is_weak_mode := false else close (-1); Queue.add EOF tokens
                 | _ -> if !is_weak_mode then is_weak_mode := false else close column; Queue.add new_token tokens
             end;
@@ -188,6 +193,9 @@ and comment = parse
             | LCURLY -> print_string "Lcurly\n"
             | RCURLY -> print_string "Rcurly\n"
             | EQUAL -> print_string "Equal\n"
+            | DO -> print_string "Do\n"
+            | LPAREN -> print_string "Lparen\n"
+            | RPAREN -> print_string "Rparen\n"
             | _ -> print_string "Other\n"
         end; t
         *)
