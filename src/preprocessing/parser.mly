@@ -15,6 +15,7 @@
 /* Priotity and associativity of tokens */
 %left OR
 %left AND
+%left CONCATENATE
 %nonassoc NOT
 %nonassoc CMP
 %left PLUS MINUS
