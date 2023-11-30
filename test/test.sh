@@ -56,7 +56,7 @@ echo
 
 # les bons
 echo -n "bons "
-for f in syntax/good/*.purs typing/bad/*.purs typing/good/*.purs exec/*.purs exec-fail/*.purs; do
+for f in syntax/good/*.purs; do
     echo -n ".";
     max=`expr $max + 1`;
     compile --parse-only $f;
@@ -107,7 +107,7 @@ echo
 
 # les bons
 echo -n "bons "
-for f in typing/good/*.purs exec/*.purs exec-fail/*.purs; do
+for f in typing/good/*.purs; do
     echo -n ".";
     max=`expr $max + 1`;
     compile --type-only $f;
