@@ -97,6 +97,8 @@ and string = parse
 
 {   
     let tokens = Queue.create () 
+    let is_weak_mode = ref false (* weak indentation mode *)
+    let about_weak_mode = ref false
 
     let stack = ref [] (* indentation stack *)
     let rec close c = 
@@ -114,34 +116,43 @@ and string = parse
         fun lexbuf ->
         if Queue.is_empty tokens then 
             begin
-                let new_token = next_tokens lexbuf in 
+                let new_token = next_tokens lexbuf in
                 let start_position = lexeme_start_p lexbuf in
-                let column = start_position.pos_cnum - start_position.pos_bol in
-                    match new_token with
-                    | LIDENT id ->
-                        try 
-                            let token = Hashtbl.find keyword_hashtable id in
-                            match token with 
-                            | IF | LPAREN | CASE -> 
-                                close column;
-                                stack := M :: !stack;
-                                Queue.add token tokens
-                            | RPAREN | THEN | ELSE | IN -> 
-                                pop_until_marker ();
-                                if token = THEN then stack := M :: !stack;
-                                Queue.add token tokens
-                            | WHERE | DO | LET | OF -> 
-                                close column;
-                                if token = LET then stack := M :: !stack;
-                                if token = OF then pop_until_marker ();
-                                Queue.add LCURLY tokens;
-                                Queue.add token tokens;
-                                is_weak_mode := true
-                            | _ -> close column; Queue.add token tokens
-                        with 
-                            | Not_found -> Queue.add (LIDENT id) tokens
-                            | Bad_indentation -> raise Bad_indentation
-                    | _ -> close column; Queue.add new_token tokens
+                let column = start_position.pos_cnum - start_position.pos_bol in 
+                let _ = if !about_weak_mode then
+                    (
+                        close column;
+                        stack := (B column) :: !stack;
+                        about_weak_mode := false;
+                        is_weak_mode := true 
+                    )
+                in match new_token with
+                | LIDENT id ->
+                    begin
+                    try 
+                        let token = Hashtbl.find keyword_hashtable id in
+                        match token with 
+                        | IF | LPAREN | CASE -> 
+                            if !is_weak_mode then is_weak_mode := false else close column;
+                            stack := M :: !stack;
+                            Queue.add token tokens
+                        | RPAREN | THEN | ELSE | IN -> 
+                            pop_until_marker ();
+                            if token = THEN then stack := M :: !stack;
+                            Queue.add token tokens
+                        | WHERE | DO | LET | OF -> 
+                            if !is_weak_mode then is_weak_mode := false else close column;
+                            if token = LET then stack := M :: !stack;
+                            if token = OF then pop_until_marker ();
+                            Queue.add LCURLY tokens;
+                            Queue.add token tokens;
+                            about_weak_mode := true
+                        | _ -> close column; Queue.add token tokens
+                    with 
+                        | Not_found -> Queue.add (LIDENT id) tokens
+                        | Bad_indentation -> raise Bad_indentation
+                    end
+                | _ -> if !is_weak_mode then is_weak_mode := false else close column; Queue.add new_token tokens
             end;
             Queue.pop tokens
 }
