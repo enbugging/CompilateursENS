@@ -7,7 +7,7 @@
 %token <Ast.constant> CONSTANT
 %token <string> LIDENT UIDENT 
 %token <Ast.binaryOperation> CMP
-%token CASE CLASS DATA DO ELSE FALSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN TRUE WHERE
+%token CASE CLASS DATA DO ELSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN WHERE
 %token EOF
 %token LPAREN RPAREN LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING DOT VERTICAL_BAR
 %token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT
@@ -30,14 +30,8 @@
 %%
 
 file:
-    | MODULE UIDENT WHERE LCURLY i=imports d=separated_nonempty_list(SEMICOLON, decl) RCURLY EOF
+    | MODULE UIDENT WHERE LCURLY i=list(delimited(IMPORT, UIDENT, SEMICOLON)) d=separated_nonempty_list(SEMICOLON, decl) RCURLY EOF
     {File (i, d)}
-
-imports:
-    | IMPORT UIDENT SEMICOLON 
-      IMPORT UIDENT SEMICOLON 
-      IMPORT UIDENT SEMICOLON 
-      {["Prelude";"Effect";"Prelude.Console"]}
 
 type_lident:
     | type_lident=LIDENT
@@ -48,25 +42,25 @@ decl:
         { defn }
     | tdecl=tdecl
         { tdecl }
-    | DATA name=UIDENT types=list(type_lident) EQUAL constructors=separated_nonempty_list(VERTICAL_BAR, constructor)
+    | DATA name=UIDENT types=type_lident* EQUAL constructors=separated_nonempty_list(VERTICAL_BAR, constructor)
         { Data (Name name, types, constructors)}
-    | CLASS name=UIDENT types=list(type_lident) WHERE LCURLY tdecls=separated_list(SEMICOLON, tdecl) RCURLY
+    | CLASS name=UIDENT types=type_lident* WHERE LCURLY tdecls=separated_list(SEMICOLON, tdecl) RCURLY
         { Class (Name name, types, tdecls) }
     | INSTANCE instance=instance WHERE LCURLY defns=separated_list(SEMICOLON, defn) RCURLY
         { Instance (instance, defns) }
 
 constructor:
-    | u=UIDENT ats=list(atype)
+    | u=UIDENT ats=atype*
         { Constructor (Name u, ats) }
 
 defn:
-    | li=LIDENT pts=list(patarg) EQUAL e=expr
+    | li=LIDENT pts=patarg* EQUAL e=expr
         { Definition (li, pts, e) }
 
 tdecl:
-    | name=LIDENT COLON COLON nts=list(ntype_arrow) tys=separated_nonempty_list(BRANCHING, typed)
+    | name=LIDENT COLON COLON nts=ntype_arrow* tys=separated_nonempty_list(BRANCHING, typed)
         { TypeDeclaration (name, [], nts, tys) }
-    | name=LIDENT COLON COLON FORALL lis=nonempty_list(type_lident) DOT nts=list(ntype_arrow) tys=separated_nonempty_list(BRANCHING, typed)
+    | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT nts=ntype_arrow* tys=separated_nonempty_list(BRANCHING, typed)
         { TypeDeclaration (name, lis, nts, tys) }
 
 ntype_arrow:
@@ -76,7 +70,7 @@ ntype_arrow:
 ntype:
     | name=UIDENT 
         { TypeConstructor (Name name, []) }
-    | name=UIDENT ats=nonempty_list(atype)
+    | name=UIDENT ats=atype+
         { TypeConstructor (Name name, ats) }
 
 atype:
@@ -114,7 +108,7 @@ patarg:
 pattern:
     | p=patarg
         { PatternArgument p }
-    | s=UIDENT pts=nonempty_list(patarg)
+    | s=UIDENT pts=patarg+
         { PatternConstructor (s, pts) }
 
 constant:
@@ -142,9 +136,9 @@ expr:
     {UnaryOperation (Not, e)}
     | e1 = expr b = binop e2 = expr
     {BinaryOperation (e1,b,e2)}
-    | lident=LIDENT a_s = nonempty_list(atom)
+    | lident=LIDENT a_s = atom+
     { FunctionCall (lident, a_s) }
-    | uident=UIDENT a_s = nonempty_list(atom)
+    | uident=UIDENT a_s = atom+
     { ExplicitConstructor (uident, a_s) }
     | IF e1 = expr THEN e2 = expr ELSE e3 =expr
     {Conditional (e1,e2,e3)}
