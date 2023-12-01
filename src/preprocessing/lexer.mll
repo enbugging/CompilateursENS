@@ -7,7 +7,9 @@
 
     exception Unterminated_comment
     exception Illegal_character of char
+    exception Illegal_character_in_gap of char
     exception Undetermined_string
+    exception Unterminated_gap
     exception Bad_indentation
     (* Handling of significant indentation *)
     type indentation = 
@@ -107,8 +109,8 @@ and gap = parse
     | '\\'          { string lexbuf }
     | ' ' | "\r\n" | '\n'
                     { new_line lexbuf; gap lexbuf }
-    | _ as c        { raise (Illegal_character c) }
-    | eof           { raise Unterminated_comment }
+    | _ as c        { raise (Illegal_character_in_gap c) }
+    | eof           { raise Unterminated_gap }
 
 {   
     let tokens = Queue.create () 
