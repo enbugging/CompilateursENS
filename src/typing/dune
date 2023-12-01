@@ -1,0 +1,6 @@
+(include_subdirs no)
+
+(library
+ (name typing)
+ (libraries preprocessing)
+ (flags ()))

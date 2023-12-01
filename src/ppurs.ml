@@ -2,7 +2,7 @@
 
 open Format
 open Lexing
-open Parser
+open Preprocessing
 
 let usage = "usage: ppurs [options] file.purs"
 

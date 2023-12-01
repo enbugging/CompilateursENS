@@ -1,3 +1,5 @@
+open Preprocessing.Ast
+
 type typ = 
 	| Tint 
 	| Tstring 
@@ -12,6 +14,8 @@ and tvar =
 		id : int; 
 		mutable def : typ option; 
 	}
+type inst = C of typ list 
+type schema = S of inst list * inst
 
 module V = struct
 	type t = tvar
