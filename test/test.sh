@@ -45,7 +45,7 @@ for f in syntax/bad/*.purs; do
     case $? in
 	"0")
 	echo
-	echo "ECHEC sur "$f" (devrait échouer)";;
+	echo "ECHEC sur "$f" (devrait Ã©chouer)";;
 	"1") score=`expr $score + 1`;;
 	*)
 	echo
@@ -56,7 +56,7 @@ echo
 
 # les bons
 echo -n "bons "
-for f in syntax/good/*.purs; do
+for f in syntax/good/*.purs typing/bad/*.purs typing/good/*.purs exec/*.purs exec-fail/*.purs; do
     echo -n ".";
     max=`expr $max + 1`;
     compile --parse-only $f;
@@ -77,7 +77,7 @@ percent=`expr 100 \* $score / $max`;
 echo -n "Parsing: $score/$max : $percent%"; }
 
 ##############################################################################
-# partie 2 : tests d'analyse sémantique
+# partie 2 : tests d'analyse sÃ©mantique
 ##############################################################################
 
 partie2 () {
@@ -96,7 +96,7 @@ for f in typing/bad/*.purs; do
     case $? in
 	"0")
 	echo
-	echo "ECHEC sur "$f" (devrait échouer)";;
+	echo "ECHEC sur "$f" (devrait Ã©chouer)";;
 	"1") score=`expr $score + 1`;;
 	*)
 	echo
@@ -107,7 +107,7 @@ echo
 
 # les bons
 echo -n "bons "
-for f in typing/good/*.purs; do
+for f in typing/good/*.purs exec/*.purs exec-fail/*.purs; do
     echo -n ".";
     max=`expr $max + 1`;
     compile --type-only $f;
@@ -130,7 +130,7 @@ echo    "Typage: $score/$max : $percent%";
 
 
 ##############################################################################
-# partie 3 : tests d'exécution
+# partie 3 : tests d'exÃ©cution
 ##############################################################################
 partie3 () {
 
@@ -169,12 +169,12 @@ for f in exec/*.purs; do
 	fi
     else
 	echo
-	echo "ECHEC de la compilation sur $f (devrait réussir)"
+	echo "ECHEC de la compilation sur $f (devrait rÃ©ussir)"
     fi
 done
 echo
 
-echo "Execution conduisant à un échec"
+echo "Execution conduisant Ã  un Ã©chec"
 echo "-------------------------------"
 
 for f in exec-fail/*.purs; do
@@ -186,14 +186,14 @@ for f in exec-fail/*.purs; do
 	score_comp=`expr $score_comp + 1`;
 	if ./a.out > out; then
 	    echo
-	    echo "ECHEC : devrait échouer sur $f"
+	    echo "ECHEC : devrait Ã©chouer sur $f"
 	else
 	    score_test=`expr $score_test + 1`;
 	    score_out=`expr $score_out + 1`;
 	fi
     else
 	echo
-	echo "ECHEC de la compilation sur $f (devrait réussir)"
+	echo "ECHEC de la compilation sur $f (devrait rÃ©ussir)"
     fi
 done
 
@@ -230,7 +230,7 @@ case $option in
     	partie3;;
     * )
         echo "usage : $0 <option> <compilo>"
-        echo "spécifier une option parmi : "
+        echo "spÃ©cifier une option parmi : "
         echo "-1      : tester la partie 1"
         echo "-2      : tester la partie 2"
         echo "-3      : tester la partie 3"
