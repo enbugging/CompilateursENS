@@ -119,7 +119,7 @@ and gap = parse
     let rec close c = 
         match !stack with
         | (B n) :: s when n > c -> stack := s; Queue.add RCURLY tokens; close c
-        | (B n) :: s when n = c -> Queue.add SEMICOLON tokens;
+        | (B n) :: _ when n = c -> Queue.add SEMICOLON tokens;
         | _ -> ()
     let rec pop_until_marker () =
         match !stack with
