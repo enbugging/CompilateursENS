@@ -91,7 +91,9 @@ rule next_tokens = parse
 
 and string = parse 
     | '"'           { let s = Buffer.contents string_buffer in Buffer.reset string_buffer; s }
+    | '\\'          { gap lexbuf}
     | "\\n"         { Buffer.add_char string_buffer '\n'; string lexbuf }
+    | "\n"          { raise (Illegal_character '\n') }
     | "\\\""        { Buffer.add_char string_buffer '"'; string lexbuf }
     | _ as c        { Buffer.add_char string_buffer c; string lexbuf }
     | eof           { raise Undetermined_string }
@@ -99,6 +101,13 @@ and string = parse
 and comment = parse
     | "-}"          { next_tokens lexbuf }
     | _             { comment lexbuf }
+    | eof           { raise Unterminated_comment }
+
+and gap = parse
+    | '\\'          { string lexbuf }
+    | ' ' | "\r\n" | '\n'
+                    { new_line lexbuf; gap lexbuf }
+    | _ as c        { raise (Illegal_character c) }
     | eof           { raise Unterminated_comment }
 
 {   
