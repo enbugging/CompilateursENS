@@ -55,7 +55,7 @@ constructor:
         { Constructor (Name u, ats) }
 
 defn:
-    | li=LIDENT pts=patarg* EQUAL e=expr
+    | li=LIDENT pts=patarg* EQUAL e=expression
         { Definition (li, pts, e) }
 
 tdecl:
@@ -123,39 +123,50 @@ atom:
     { Variable lident }
     | uident=UIDENT
     { Variable uident }
-    | LPAREN e = expr RPAREN
-    { e }
     | LPAREN lident = LIDENT COLON COLON t=typed RPAREN
-    {TypedExpression (Variable lident, t)}
+    {TypedExpression ({
+        expression = Variable lident;
+        location = $startpos, $endpos
+    }, t)}
+
+expression:
+    | LPAREN e = expression RPAREN
+    { e }
+    | e = expr
+    { { expression = e;
+        location = $startpos, $endpos }}
 
 expr:
     |a = atom 
     { a }
-    | MINUS e = expr %prec unary_minus
-    {BinaryOperation (Constant(Integer 0), Minus, e)}
-    | NOT e = expr
+    | MINUS e = expression %prec unary_minus
+    {BinaryOperation ({ 
+        expression = Constant(Integer 0); 
+        location = $startpos, $endpos
+        }, Minus, e)}
+    | NOT e = expression
     {UnaryOperation (Not, e)}
-    | e1 = expr b = binop e2 = expr
+    | e1 = expression b = binop e2 = expression
     {BinaryOperation (e1,b,e2)}
-    | lident=LIDENT a_s = atom+
+    | lident=LIDENT a_s = expression+
     { FunctionCall (lident, a_s) }
-    | uident=UIDENT a_s = atom+
+    | uident=UIDENT a_s = expression+
     { ExplicitConstructor (uident, a_s) }
-    | IF e1 = expr THEN e2 = expr ELSE e3 =expr
+    | IF e1 = expression THEN e2 = expression ELSE e3 =expression
     {Conditional (e1,e2,e3)}
-    | DO LCURLY es = separated_nonempty_list(SEMICOLON, expr) RCURLY
+    | DO LCURLY es = separated_nonempty_list(SEMICOLON, expression) RCURLY
     {Do es}
-    | LET LCURLY bs = separated_nonempty_list(SEMICOLON, binding) RCURLY IN e = expr
+    | LET LCURLY bs = separated_nonempty_list(SEMICOLON, binding) RCURLY IN e = expression
     {Let (bs, e)}
-    | CASE e = expr OF LCURLY bs = separated_nonempty_list(SEMICOLON, branch) RCURLY
+    | CASE e = expression OF LCURLY bs = separated_nonempty_list(SEMICOLON, branch) RCURLY
     {Case (e, bs)}
 
 binding:
-    | lident=LIDENT EQUAL e = expr
+    | lident=LIDENT EQUAL e = expression
     { (lident,e) }
 
 branch:
-    | p = pattern BRANCHING e = expr
+    | p = pattern BRANCHING e = expression
     {(p,e)}
 
 %inline binop:
