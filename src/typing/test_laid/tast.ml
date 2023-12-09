@@ -17,13 +17,12 @@ and tvar = string
 
 and tconstr = string * typ list
 
-type tfun = string * typ list
 type tdectype = string * typ
 type tdecdata = string * string list * tconstr list
-type tclass = string * tvar list * tfun list
 type tinstance = string * typ list
 type tinstance_schema = tinstance list * tinstance
 type tdecfun = string * string list * tinstance list * typ list
+type tdecclass = string * tvar list * tdecfun list
 
 type global_environment = {mutable types : tdectype list;
                                 mutable datas : tdecdata list;

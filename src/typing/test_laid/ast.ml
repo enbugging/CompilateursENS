@@ -67,7 +67,7 @@ type expression =
 type decl =
   (* Definition *)
   | Definition of ident * patarg list * expression
-  (* Type declaration *)
+  (* Type declaration, première ligne d'une définition de fonction*)
   | TypeDeclaration of ident * typed list * typed list * typed list
 	(* Data (newTypename, types of arguments, cases) *)
 	| Data of name * typed list * constructor list
