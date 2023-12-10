@@ -34,11 +34,45 @@ let trouve_decfun_g_env s =
                 | (s',_,_,_) as res :: q -> if s=s' then res else aux q
         in aux g_env.fonctions
 
-let rec resoud_instance env sigma (nom_i, t_list) = ()
-        (*on trouve une instance plus générale dans l'environnement local*)
-        (*Ou on trouve une instance plus générale dans l'environnement global*)
-        (*Ou on trouve un schema d'instance qui donne une instance plus générale que la notre*)
+let rec plus_general assoc = function
+        | _, Tvar tvar -> true
+        | Tconstr (s, tau_list), Tconstr (s', tau_list') -> s=s' && List.for_all (plus_general assoc) (List.combine tau_list tau_list')
+        | Teffect t, Teffect t' -> plus_general assoc (t,t')
+        | Tvar tvar, t -> 
+                        begin match List.assoc_opt tvar assoc with
+                        | None -> false
+                        | Some (t') -> plus_general assoc (t',t)
+                        end
+        | Tint, Tint 
+        | Tstring, Tstring 
+	| Tbool, Tbool
+	| Tunit, Tunit -> true
+        | _,_ -> false
+  
 
+let rec resoud_instance_local_ou_global assoc (nom_i, t_list) = function
+        | [] -> false
+        | (nom_i', t_list') :: q -> 
+                                plus_general assoc (Tconstr (nom_i, t_list), Tconstr (nom_i', t_list')) || resoud_instance_local_ou_global assoc (nom_i, t_list) q
+        
+let rec resoud_instance env (nom_i, t_list) = 
+       (*on trouve une instance plus générale dans l'environnement local*)
+      (*Ou on trouve une instance plus générale dans l'environnement global*)
+        (*Ou on trouve un schema d'instance qui donne une instance plus générale que la notre*)
+  if resoud_instance_local_ou_global env.vdecl (nom_i, t_list) env.instances 
+           || resoud_instance_local_ou_global env.vdecl (nom_i, t_list) g_env.instances 
+           || resoud_instance_schemas env (nom_i, t_list) g_env.schemas then
+                   true
+        else
+                failwith "Impossible de resoudre l'instance"
+
+and resoud_instance_schemas env (nom_i, t_list) = function
+        | [] -> false
+        | (i_list, (nom_i', t_list')) :: q -> if nom_i=nom_i' then
+                List.for_all (resoud_instance env) i_list && t_list' = t_list
+        else resoud_instance_schemas env (nom_i, t_list) q
+
+       
 let rec pop_dernier = function
         | [] -> failwith "Pop dernier d'une liste vite..."
         | [x] -> ([],x)
@@ -164,7 +198,7 @@ let rec type_expr env = function
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         let t_list', dernier = pop_dernier t_list in
                         List.iter (fun (e_i,tau_i) -> unifie_sub env sigma (tau_i, type_expr env e_i) ) (List.combine expr_l t_list');
-                        List.iter (fun i -> resoud_instance env sigma i) instances;
+                        List.iter (fun i -> let _ = resoud_instance env i in ()) instances;
                         applique_sub !sigma dernier
 
 	| Ast.Case (e, p_e_list) (*expression * (pattern * expression) list*) -> Tunit
