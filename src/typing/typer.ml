@@ -196,6 +196,10 @@ let rec bf env = function
         | Preprocessing.Ast.TypeIdent "Int" -> Tint
         | Preprocessing.Ast.TypeIdent "String" -> Tstring
         | Preprocessing.Ast.TypeIdent s -> trouve_type_of_var_lenv s env
+        | Preprocessing.Ast.TypeConstructor (Name "Unit", _) -> Tunit
+        | Preprocessing.Ast.TypeConstructor (Name "Boolean", _) -> Tbool
+        | Preprocessing.Ast.TypeConstructor (Name "Int", _) -> Tint
+        | Preprocessing.Ast.TypeConstructor (Name "String", _) -> Tstring
         | Preprocessing.Ast.TypeConstructor (Name "Effect", [t]) -> Teffect (bf env t)
         | Preprocessing.Ast.TypeConstructor (Name s, t_list) -> 
                         begin match trouve_type_of_var_lenv s env with 
@@ -392,6 +396,7 @@ let declaration_de_fonction = function
                         let vars' = List.map (fun (Preprocessing.Ast.TypeIdent s) -> s) vars in
                         let typed_instances = List.map (fun (Tast.Tconstr x) -> x) (List.map (bf {instances=[]; vars=vars'; vdecl=(List.map (fun v -> (v, Tvar v)) vars')}) instances) in
                         let t_list = List.map (bf {instances=typed_instances; vars=vars'; vdecl=(List.map (fun v -> (v, Tvar v)) vars')}) types in
+                        print_string name;
                         g_env.fonctions <- (name,vars',typed_instances,t_list)::g_env.fonctions;
                         ({instances=typed_instances; vars=vars'; vdecl=(List.map (fun v -> (v, Tvar v)) vars')},t_list)
         | _ -> failwith "On attendait ici une declaration de fonction"
@@ -431,12 +436,12 @@ let rec type_declarations l = match l with
 
 
         | Preprocessing.Ast.TypeDeclaration (name,_,_,_) as td :: q -> 
-                        print_string name;
                         let env, tau_list = declaration_de_fonction td in
                         let definitions, suite_du_fichier = separe_defs_suite name q in 
                         (*Ici on devrait vérifier que
                         tous les motifs sont des variables, à l’exception d’une colonne au plus, qui est un filtrage exhaustif*)
                         (*let c = unique_non_variable definitions in*)
+                        List.iter (definition_bf env tau_list) definitions;
                         type_declarations suite_du_fichier
 
         | Preprocessing.Ast.Class _ as c :: q -> declaration_de_class c; type_declarations q
