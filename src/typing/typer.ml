@@ -431,6 +431,7 @@ let rec type_declarations l = match l with
 
 
         | Preprocessing.Ast.TypeDeclaration (name,_,_,_) as td :: q -> 
+                        print_string name;
                         let env, tau_list = declaration_de_fonction td in
                         let definitions, suite_du_fichier = separe_defs_suite name q in 
                         (*Ici on devrait vérifier que
