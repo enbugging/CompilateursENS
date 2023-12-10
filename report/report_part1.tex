@@ -1,0 +1,51 @@
+\documentclass{amsart}
+\usepackage{amsmath, 
+	amssymb,
+	amsthm,
+	amsfonts, 
+	hyperref}
+
+\title{Report on \texttt{PetitPurescript} compiler project}
+\author{Pierre-Gabriel Berlureau, Nguyen Doan Dai}
+
+\begin{document}
+	\maketitle
+	
+	This memo summarises our project for the first part.
+	
+	\section{Compilation and usage}
+	Compilation requires build tool \text{dune} of version 5.10.3. The simulator is implemented in OCaml version 5.1.0. The implementation was compiled and tested in Linux Ubuntu 20.04.6 LTS through Window Subsystem for Linux. The source can be found on \url{https://github.com/enbugging/CompilateursENS}.
+	
+	The source code is equipped with a \texttt{Makefile}, where command
+	\begin{itemize}
+		\item \texttt{make} builds the projects and results in an executable \texttt{ppurs.exe} available in the project's directory
+		\item \texttt{make tests} builds the executable if necessary, and tests the compiler against the tests regarding syntactic analysis and typing analysis.
+		\item \texttt{make clean} removes the build files and the executable.
+	\end{itemize}
+	
+	The compiler has basic interface, of the form 
+	
+	\texttt{./ppurs.exe [--parse-only] [--type-only] file.purs}, 
+	
+	with
+	\begin{itemize}
+		\item \texttt{--parse-only}: flag to print only the netlist after scheduling;
+		\item \texttt{--type-only}: flag to specify \texttt{nr}, the number of cycles to be simulated;
+		\item \texttt{file.purs}, the \texttt{.purs} file containing the source code in \texttt{PetitPurescript}. For further information, consult the documentation provided in \texttt{./doc}, title \texttt{sujet-v3.pdf}.
+	\end{itemize}
+	
+	\section{Functionalities}
+	
+	\subsection{Syntactic analysis}
+	
+	The compiler supports \texttt{PetitPurescript}'s syntax with indentation, and reports lexxing errors such as bad indentation, unexpected characters, unexpected line feed in gap, malformed strings and comments. The error messages are to follow the behaviours of \texttt{PureScript} as much as possible, whilst also following the error message format specified in the guideline.
+	
+	Regarding the parsing error, however, the compile only reports the position of the error, and not the nature.
+	
+	\subsection{Typing analysis}
+	
+	\section{Difficulties}
+	
+	Over the course of the project, we found that unlike syntactic counterpart, typing analysis could not be naturally split into two parts and allowing collaboration. This raised significant difficulties toward the end of the first part of this project.
+	
+\end{document}

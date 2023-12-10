@@ -3,3 +3,7 @@ _build/
 *.opam
 *.exe
 test/test.sh
+*.aux
+*.log
+*.synctex.gz
+*.out

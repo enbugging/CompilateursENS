@@ -3,6 +3,7 @@
 open Format
 open Lexing
 open Preprocessing
+open Typing
 
 let usage = "usage: ppurs [options] file.purs"
 
