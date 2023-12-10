@@ -1,5 +1,6 @@
 (library
  (name typing)
  (libraries preprocessing)
- (modules typer)
+ (modules typer tast)
  (flags ()))
+
