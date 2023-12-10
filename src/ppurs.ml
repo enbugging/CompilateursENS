@@ -42,7 +42,7 @@ let () =
 		if !parse_only then exit 0;
 
 		(* Typing *)
-                let t = Typer.test in
+                let t = Typer.file f in
 		if !type_only then exit 0;
 	with
 		| Lexer.Illegal_character s ->

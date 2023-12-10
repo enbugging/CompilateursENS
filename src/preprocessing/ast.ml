@@ -44,10 +44,11 @@ and patarg =
 
 type unaryOperation = Not
 
-type expression = 
+(*type expression = 
   { expression : expr ;
     location : Lexing.position * Lexing.position }
-and expr = 
+*)
+type expression = 
 	| Constant of constant
 	| Variable of ident
   | UnaryOperation of unaryOperation * expression

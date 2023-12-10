@@ -124,26 +124,26 @@ atom:
     | uident=UIDENT
     { Variable uident }
     | LPAREN lident = LIDENT COLON COLON t=typed RPAREN
-    {TypedExpression ({
+    {TypedExpression ((*{
         expression = Variable lident;
         location = $startpos, $endpos
-    }, t)}
+    }*) Variable lident, t)}
 
 expression:
     | LPAREN e = expression RPAREN
     { e }
     | e = expr
-    { { expression = e;
-        location = $startpos, $endpos }}
+    { (*{ expression = e;
+        location = $startpos, $endpos }*) e}
 
 expr:
     |a = atom 
     { a }
     | MINUS e = expression %prec unary_minus
-    {BinaryOperation ({ 
+    {BinaryOperation ((*{ 
         expression = Constant(Integer 0); 
         location = $startpos, $endpos
-        }, Minus, e)}
+        }*)Constant(Integer 0), Minus, e)}
     | NOT e = expression
     {UnaryOperation (Not, e)}
     | e1 = expression b = binop e2 = expression
