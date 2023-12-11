@@ -126,7 +126,7 @@ atom:
     { Variable uident }
     | LPAREN lident = LIDENT COLON COLON t=typed RPAREN
     {TypedExpression ({
-        expression = Variable lident;
+        e = Variable lident;
         location = $startpos, $endpos
     }, t)}
 
@@ -134,7 +134,7 @@ expression:
     | LPAREN e = expression RPAREN
     { e }
     | e = expr
-    { { expression = e;
+    { { e = e;
         location = $startpos, $endpos } }
 
 expr:
@@ -142,11 +142,11 @@ expr:
     { a }
     | MINUS e = expression %prec unary_minus
     {BinaryOperation ({ 
-        expression = Constant(Integer 0); 
+        e = Constant(Integer 0); 
         location = $startpos, $endpos
         }, Minus, e)}
     | NOT e = expression
-    {UnaryOperation (Not, e)}
+    {FunctionCall ("not", [e])}
     | e1 = expression b = binop e2 = expression
     {BinaryOperation (e1,b,e2)}
     | lident=LIDENT a_s = expression+

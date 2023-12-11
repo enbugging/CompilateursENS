@@ -66,6 +66,11 @@ let ajoute_l_env_var v e =
         vars = v::e.vars;
         vdecl = (v, Tvar v)::e.vdecl}
 
+let ajoute_l_env_assoc v tau e =
+        {instances=e.instances;
+        vars = v::(List.filter (fun s -> s<>v) e.vars);
+        vdecl = (v, tau)::(List.filter (fun (s,_) -> s<>v) e.vdecl)}
+
 let ajoute_g_env_data nom vars c_list g_env = 
         {
         types = g_env.types;
@@ -76,5 +81,20 @@ let ajoute_g_env_data nom vars c_list g_env =
         schemas = g_env.schemas;
         }
 
+let ajoute_g_env_fonction nom vars i_list t_list g_env = 
+        {
+        types = g_env.types;
+        datas = g_env.datas;
+        fonctions = (nom, vars, i_list, t_list)::g_env.fonctions;
+        classes = g_env.classes;
+        instances = g_env.instances;
+        schemas = g_env.schemas;
+        }
+
 exception Error of (Lexing.position * Lexing.position)
 
+let type_of_var_l_env x start_p end_p env =
+        begin
+        try List.assoc x env.vdecl 
+        with Not_found -> raise (Error (start_p,end_p))
+        end

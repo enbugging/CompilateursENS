@@ -42,20 +42,17 @@ and patarg =
   | PatargIdent of ident 
   | Pattern of pattern 
 
-type unaryOperation = Not
-
 type expression = 
-  { expression : expr ;
+  { e : expr ;
     location : Lexing.position * Lexing.position }
 
 and expr = 
 	| Constant of constant
 	| Variable of ident
-  | UnaryOperation of unaryOperation * expression
 	| TypedExpression of expression * typed
 	| BinaryOperation of expression * binaryOperation * expression
 	| Conditional of expression * expression * expression
-  | ExplicitConstructor of ident * expression list
+        | ExplicitConstructor of ident * expression list
 	| FunctionCall of ident * expression list
 	| Do of expression list
 	| Let of (ident * expression) list * expression
