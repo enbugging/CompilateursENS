@@ -4,5 +4,5 @@ import Effect
 import Effect.Console
 
 class C a b where
-	f1:: c -> a
+	f1:: a -> a
 	f2:: String -> Boolean

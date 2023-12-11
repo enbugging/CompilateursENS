@@ -20,6 +20,18 @@ let rec bf env = function
                         try Tconstr (name, List.map (bf env) t_list)
                         with _ -> raise (Error (start_p, end_p))
 
+let rec resoud_instance g_env l_env start_p end_p i =
+        let i_name, tau_list = i in
+        if trouve_l_env_instance l_env i || trouve_g_env_instance g_env i then
+                ()
+        else
+                let i_list = trouve_g_env_schema_pour g_env start_p end_p i in
+                List.iter (resoud_instance g_env l_env start_p end_p) i_list
+
+let type_motif l_env p_1 = Tunit (*TODO*)
+
+let filtrage_exhaustif tau case_list = true (*TODO*)
+
 let rec type_expression g_env l_env = function
         | {e=Constant c; location=(start_p,end_p)} -> 
                         begin match c with
@@ -48,6 +60,7 @@ let rec type_expression g_env l_env = function
                         | Tstring, Concatenate, Tstring -> Tstring
                         | _,_,_ -> let _ = print_string "Opérandes invalide pour cette opération binaire" in raise (Error (start_p, end_p))
                         end
+
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
                         if type_expression g_env l_env e1 = Tbool then
                                 let tau = type_expression g_env l_env e2 in
@@ -69,6 +82,7 @@ let rec type_expression g_env l_env = function
                                         raise (Error exp.location)
                         ) e_list;
                         Teffect Tunit
+
 	| {e=Let (assoc_list, exp); location=(start_p,end_p)} ->
                         let l_env' = ref l_env in
                         List.iter (fun (x_i,e_i) -> 
@@ -82,6 +96,27 @@ let rec type_expression g_env l_env = function
                         List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (List.combine e_list tau_list);
                         Tconstr (data_name, substitution !sigma vars)
 
-	| {e=FunctionCall (f, e_list); location=(start_p,end_p)} -> Tunit
-	| {e=Case (exp, case_list); location=(start_p,end_p)} -> Tunit
+	| {e=FunctionCall (f, e_list); location=(start_p,end_p)} ->
+                        let f,vars, instances, tau_list = trouve_g_env_fonction f g_env start_p end_p in
+                        let tau_list, ret_type = pop_dernier tau_list in
+                        let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
+                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (List.combine e_list tau_list);
+                        List.iter (resoud_instance g_env l_env start_p end_p) instances;
+                        substitution_type !sigma ret_type
+
+	| {e=Case (exp, case_list); location=(start_p,end_p)} ->
+                        let tau = type_expression g_env l_env exp in
+                        let p_1,e_1 = List.hd case_list in
+                        let p_1_bf = type_motif l_env p_1 in
+                        let tau' = type_expression g_env (etend_l_env l_env p_1) e_1 in
+                        if List.for_all (fun (p_i,e_i) ->
+                        true) case_list then
+                                if filtrage_exhaustif tau case_list then
+                                        tau'
+                                else
+                                        let _ = print_string "filtrage non exhaustif" in
+                                        raise (Error (start_p, end_p))
+                        else
+                                let _ = print_string "Une des expressions du filtrage n'est pas du bon type" in
+                                raise (Error (start_p, end_p))
 
