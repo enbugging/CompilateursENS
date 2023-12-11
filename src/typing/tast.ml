@@ -58,7 +58,7 @@ type schema = { vars : Vset.t; typ : typ }
 (*type env = { instances : tinstance list; bindings : schema Smap.t; fvars : Vset.t }*)
 type env = {instances : tinstance list; vars : string list; vdecl : (string*typ) list }
 
-let empty_env = {instances = []; vars = []; vdecl = []}
+let empty_env = {instances = []; vars = ["Unit"; "Boolean"; "Int"; "String"]; vdecl = [("Unit",Tunit); ("Boolean",Tbool); ("Int",Tint); ("String",Tstring)]}
 
 (*Fonctions de gestion des environnements*)
 let ajoute_l_env_var v e =
@@ -91,6 +91,11 @@ let ajoute_g_env_fonction nom vars i_list t_list g_env =
         schemas = g_env.schemas;
         }
 
+let substitution assoc_list l = 
+        List.map (fun v -> match List.assoc_opt v assoc_list with
+                        | None -> Tvar v
+                        | Some t -> t) l
+
 exception Error of (Lexing.position * Lexing.position)
 
 let type_of_var_l_env x start_p end_p env =
@@ -98,3 +103,16 @@ let type_of_var_l_env x start_p end_p env =
         try List.assoc x env.vdecl 
         with Not_found -> raise (Error (start_p,end_p))
         end
+
+let trouve_g_env_constructeur x g_env start_p end_p =
+        let rec find = function
+                | [] -> let _ = print_string "Constructeur inexistant\n" in raise (Error (start_p,end_p))
+                | (data_name, vars, constructeurs) :: q -> 
+                                begin match List.assoc_opt x constructeurs with
+                                | None -> find q
+                                | Some tau_list -> (data_name, vars, tau_list)
+                                end
+
+        in find g_env.datas
+
+
