@@ -36,7 +36,7 @@ file:
 
 type_lident:
     | type_lident=LIDENT
-        { TypeIdent type_lident }
+        { TypeIdent (Name (type_lident,$startpos,$endpos)) }
 
 decl:
     | defn=defn
@@ -44,41 +44,42 @@ decl:
     | tdecl=tdecl
         { tdecl }
     | DATA name=UIDENT types=type_lident* EQUAL constructors=separated_nonempty_list(VERTICAL_BAR, constructor)
-        { Data (Name name, types, constructors)}
+        { Data (Name (name,$startpos,$endpos), types, constructors)}
     | CLASS name=UIDENT types=type_lident* WHERE LCURLY tdecls=separated_list(SEMICOLON, tdecl) RCURLY
-        { Class (Name name, types, tdecls) }
+        { Class (Name (name,$startpos,$endpos), types, tdecls) }
     | INSTANCE instance=instance WHERE LCURLY defns=separated_list(SEMICOLON, defn) RCURLY
         { Instance (instance, defns) }
 
 constructor:
     | u=UIDENT ats=atype*
-        { Constructor (Name u, ats) }
+        { Constructor (Name (u,$startpos,$endpos), ats) }
 
 defn:
     | li=LIDENT pts=patarg* EQUAL e=expression
-        { Definition (li, pts, e) }
+        { Definition (Name (li,$startpos,$endpos), pts, e) }
 
 tdecl:
     | name=LIDENT COLON COLON tys=separated_nonempty_list(BRANCHING, typed)
-        { TypeDeclaration (name, [], [], tys) }
+        { TypeDeclaration (Name (name,$startpos,$endpos), [], [], tys) }
     | name=LIDENT COLON COLON nts=terminated(typed, ARROW)* tys=separated_nonempty_list(BRANCHING, typed)
-        { TypeDeclaration (name, [], nts, tys) }
+        { TypeDeclaration (Name (name,$startpos,$endpos), [], nts, tys) }
     | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT tys=separated_nonempty_list(BRANCHING, typed)
-        { TypeDeclaration (name, lis, [], tys) }
+        { TypeDeclaration (Name (name,$startpos,$endpos), lis, [], tys) }
     | name=LIDENT COLON COLON FORALL lis=type_lident+ DOT nts=terminated(typed, ARROW)* tys=separated_nonempty_list(BRANCHING, typed)
-        { TypeDeclaration (name, lis, nts, tys) }
+        { TypeDeclaration (Name (name,$startpos,$endpos), lis, nts, tys) }
 
 ntype:
     | name=UIDENT 
-        { TypeConstructor (Name name, []) }
+        { TypeConstructor (Name (name,$startpos,$endpos), []) }
     | name=UIDENT ats=atype+
-        { TypeConstructor (Name name, ats) }
+        { TypeConstructor (Name (name,$startpos,$endpos), ats) }
+
 
 atype:
     | li=LIDENT
-        { TypeIdent li }
+        { TypeIdent (Name (li,$startpos,$endpos)) }
     | ui=UIDENT
-        { TypeIdent ui }
+        { TypeIdent (Name (ui,$startpos,$endpos)) }
     | LPAREN t = typed RPAREN
         { t }
 
@@ -124,26 +125,26 @@ atom:
     | uident=UIDENT
     { Variable uident }
     | LPAREN lident = LIDENT COLON COLON t=typed RPAREN
-    {TypedExpression ((*{
+    {TypedExpression ({
         expression = Variable lident;
         location = $startpos, $endpos
-    }*) Variable lident, t)}
+    }, t)}
 
 expression:
     | LPAREN e = expression RPAREN
     { e }
     | e = expr
-    { (*{ expression = e;
-        location = $startpos, $endpos }*) e}
+    { { expression = e;
+        location = $startpos, $endpos } }
 
 expr:
     |a = atom 
     { a }
     | MINUS e = expression %prec unary_minus
-    {BinaryOperation ((*{ 
+    {BinaryOperation ({ 
         expression = Constant(Integer 0); 
         location = $startpos, $endpos
-        }*)Constant(Integer 0), Minus, e)}
+        }, Minus, e)}
     | NOT e = expression
     {UnaryOperation (Not, e)}
     | e1 = expression b = binop e2 = expression

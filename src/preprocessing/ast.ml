@@ -3,11 +3,11 @@
 (* (identifier, number of line, number of column) *)
 type ident = string
 
-type name = Name of ident
+type name = Name of ident*Lexing.position*Lexing.position
 
 type typed = 
   | TypeConstructor of ntype
-  | TypeIdent of ident
+  | TypeIdent of name
 and ntype = name * typed list
 
 
@@ -44,11 +44,11 @@ and patarg =
 
 type unaryOperation = Not
 
-(*type expression = 
+type expression = 
   { expression : expr ;
     location : Lexing.position * Lexing.position }
-*)
-type expression = 
+
+and expr = 
 	| Constant of constant
 	| Variable of ident
   | UnaryOperation of unaryOperation * expression
@@ -64,9 +64,9 @@ type expression =
 
 type decl =
   (* Definition *)
-  | Definition of ident * patarg list * expression
+  | Definition of name * patarg list * expression
   (* Type declaration *)
-  | TypeDeclaration of ident * typed list * typed list * typed list
+  | TypeDeclaration of name * typed list * typed list * typed list
 	(* Data (newTypename, types of arguments, cases) *)
 	| Data of name * typed list * constructor list
 	(* Class (name of Class, types of arguments, methods) *)

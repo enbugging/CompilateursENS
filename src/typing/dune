@@ -1,6 +1,6 @@
 (library
  (name typing)
  (libraries preprocessing)
- (modules typer tast)
+ (modules typer typerFonction typerData typerClasse typerInstance typerExpression prettyPrinterBeta tast)
  (flags ()))
 
