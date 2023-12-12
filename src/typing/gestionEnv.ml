@@ -47,7 +47,6 @@ let rec substitution_type assoc_list = function
         | Tconstr (s,t_list) -> Tconstr(s, List.map (substitution_type assoc_list) t_list)
         | t -> t
 
-exception Error of (Lexing.position * Lexing.position)
 
 let type_of_var_l_env x start_p end_p env =
         begin
