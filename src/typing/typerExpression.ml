@@ -47,7 +47,18 @@ let rec type_motif g_env l_env start_p end_p = function
                                 List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (List.combine p_list' tau_list);
                                 Tconstr (data_name, substitution !sigma vars)
 
-let filtrage_exhaustif tau case_list = true (*TODO*)
+let rec filtrage_exhaustif l_env =true
+        (*function
+        | _, [] -> false
+        | Tvar t, l -> filtrage_exhaustif l_env (type_of_var_l_env t, l)
+        | Teffect t, l -> filtrage_exhaustif l_env (type_of_var_l_env t, 
+                                                        List.map (fun (Teffect t') -> t') (List.filter (fun x -> match x with
+                                                                                                                | Tconstr _ -> true
+                                                                                                                | _ -> false) l)
+                                                        )
+        | Tconstr (name, t_list), l -> true (*TODO*)
+        | _,_ -> false
+        *)
 
 let rec type_expression g_env l_env = function
         | {e=Constant c; location=(start_p,end_p)} -> 
@@ -127,7 +138,7 @@ let rec type_expression g_env l_env = function
                         let tau' = type_expression g_env (etend_l_env l_env p_1) e_1 in
                         if List.for_all (fun (p_i,e_i) ->
                                 type_motif g_env l_env start_p end_p p_1 = tau && type_expression g_env (etend_l_env l_env p_i) e_i = tau') case_list then
-                                if filtrage_exhaustif tau case_list then
+                                if filtrage_exhaustif (case_list,tau) then
                                         tau'
                                 else
                                         let _ = print_string "filtrage non exhaustif" in
