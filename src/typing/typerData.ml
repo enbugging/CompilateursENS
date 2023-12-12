@@ -12,10 +12,10 @@ let declaration_de_type g_env =
 	function
 	| Ast.Data (Name (name, start_p, end_p), vars, c_list) ->
 		let vars = List.map (fun (Ast.TypeIdent (Name (s,_,_))) -> s) vars in
-		if not (noms_distincts vars) then raise (Error (start_p, end_p, "Les variables n'ont pas des noms distincts\n"))
+		if not (noms_distincts vars) then raise (Error (start_p, end_p, "Variables cannot have the same name\n"))
 		else
 			if not (noms_distincts (List.map (fun (Ast.Constructor (Name (x,_,_),_)) -> x) c_list)) then
-				raise (Error (start_p, end_p, "Les constructeurs n'ont pas des noms distincts\n"))
+				raise (Error (start_p, end_p, "Constructions cannot have the same name\n"))
 		else
 			(*On construit la liste des constructeurs typés*)
 			let to_add = ref [] in
@@ -24,5 +24,4 @@ let declaration_de_type g_env =
 				to_add := (c_name, List.map (bf l_env) t_list) :: !to_add
 				) c_list;
 		ajoute_g_env_data name vars !to_add g_env
-
-	| _ -> failwith "Erreur de comportement du typer"
+	| _ -> failwith "Typer error : declaration_de_type"
