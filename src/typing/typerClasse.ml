@@ -15,12 +15,12 @@ let declaration_de_classe g_env = function
 		else
 			let noms_fonctions = List.map (fun (Ast.TypeDeclaration (Name (f,_,_),_,_,_)) -> f) fonctions in
 			if not (noms_distincts noms_fonctions) then
-				let _ = print_string "Les fonctions n'ont pas des noms distincts\n" in raise (Error (start_p,end_p))
+				raise (Error (start_p,end_p, "Les fonctions n'ont pas des noms distincts\n"))
 			else
 				if List.exists (fun s ->
 					List.mem s (List.map (fun (f,_,_,_) -> f) g_env.fonctions)) 
 					noms_fonctions then
-					let _ = print_string "Les fonctions n'ont pas des noms distincts\n" in raise (Error (start_p,end_p))
+						raise (Error (start_p,end_p, "Les fonctions n'ont pas des noms distincts\n"))
 				else
 					let l_env = 
 						if List.length vars > 0 then
