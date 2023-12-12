@@ -12,14 +12,14 @@ let rec unifie_sub sigma (start_p, end_p) = function
         | Tunit, Tunit -> ()
         | Teffect t, Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
         | Tconstr (_,t_list), Tconstr (_,t_list') -> List.iter (unifie_sub sigma (start_p, end_p)) (List.combine t_list t_list')
-        | _,_ -> print_string "Expression du mauvais type\n"; raise (Error (start_p, end_p))
+        | _,_ -> raise (Error (start_p, end_p, "Expression du mauvais type\n"))
 
 let rec bf env = function
         | TypeIdent (Name (s,start_p,end_p)) -> 
                         type_of_var_l_env s start_p end_p env
         | TypeConstructor (Name (name,start_p,end_p), t_list) ->
                         try Tconstr (name, List.map (bf env) t_list)
-                        with _ -> raise (Error (start_p, end_p))
+                        with _ -> raise (Error (start_p, end_p, "Something something"))
 
 let rec resoud_instance g_env l_env start_p end_p i =
         let i_name, tau_list = i in
@@ -76,8 +76,7 @@ let rec type_expression g_env l_env = function
                         if type_expression g_env l_env exp = tau' then
                                 tau'
                         else
-                                let _ = print_string "Le type suggéré ne correspond pas\n" in
-                                raise (Error (start_p, end_p));
+                                raise (Error (start_p, end_p, "Le type suggéré ne correspond pas\n"));
 
 	| {e=BinaryOperation (e1, binop, e2); location=(start_p,end_p)} ->
                         begin match type_expression g_env l_env e1, binop, type_expression g_env l_env e2 with
@@ -86,7 +85,7 @@ let rec type_expression g_env l_env = function
                         | Tbool, Equal, Tbool | Tbool, NotEqual, Tbool | Tstring, Equal, Tstring | Tstring, NotEqual, Tstring -> Tbool
                         | Tbool, And, Tbool | Tbool, Or, Tbool -> Tbool
                         | Tstring, Concatenate, Tstring -> Tstring
-                        | _,_,_ -> let _ = print_string "Opérandes invalide pour cette opération binaire" in raise (Error (start_p, end_p))
+                        | _,_,_ -> raise (Error (start_p, end_p, "Opérandes invalide pour cette opération binaire"))
                         end
 
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
@@ -95,19 +94,16 @@ let rec type_expression g_env l_env = function
                                 if type_expression g_env l_env e3 = tau then
                                         tau
                                 else
-                                        let _ = print_string "Le deux expressions de retour du If doivent etre de meme type" in
-                                        raise (Error (start_p,end_p))
+                                        raise (Error (start_p,end_p, "Le deux expressions de retour du If doivent etre de meme type"))
                         else
-                                let _ = print_string "La première opérande du If n'est pas de type Boolean" in
-                                raise (Error (start_p, end_p))
+                                raise (Error (start_p, end_p, "La première opérande du If n'est pas de type Boolean"))
 
         | {e=Do e_list; location=(start_p,end_p)} ->
                         List.iter (fun exp -> 
                                 if type_expression g_env l_env exp = Teffect Tunit then
                                         ()
                                 else
-                                        let _ = print_string "L'expression devrait avoir le type Effect Unit" in
-                                        raise (Error exp.location)
+                                        raise (Error (start_p, end_p, "L'expression devrait avoir le type Effect Unit"))
                         ) e_list;
                         Teffect Tunit
 
@@ -141,9 +137,7 @@ let rec type_expression g_env l_env = function
                                 if filtrage_exhaustif (case_list,tau) then
                                         tau'
                                 else
-                                        let _ = print_string "filtrage non exhaustif" in
-                                        raise (Error (start_p, end_p))
+                                        raise (Error (start_p, end_p, "filtrage non exhaustif"))
                         else
-                                let _ = print_string "Une des expressions du filtrage n'est pas du bon type" in
-                                raise (Error (start_p, end_p))
+                                raise (Error (start_p, end_p, "Une des expressions du filtrage n'est pas du bon type"))
 
