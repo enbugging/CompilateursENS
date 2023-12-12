@@ -64,7 +64,7 @@ let empty_env = {instances = []; vars = ["Unit"; "Boolean"; "Int"; "String"]; vd
 let ajoute_l_env_var v e =
         {instances=e.instances;
         vars = v::(List.filter (fun s -> s<>v) e.vars);
-        vdecl = (v, Tvar v)::e.vdecl}
+        vdecl = (v, Tvar v)::(List.filter (fun (s,_) -> s<>v) e.vdecl)}
 
 let ajoute_l_env_assoc v tau e =
         {instances=e.instances;
@@ -188,7 +188,7 @@ let rec pop_dernier = function
 let rec etend_l_env env = function
         | PatternArgument p -> begin match p with
                                 | PatargConstant _ -> env
-                                | PatargIdent i -> ajoute_l_env_var i env
+                                | PatargIdent i -> if List.mem i env.vars then env else ajoute_l_env_var i env
                                 | Pattern p' -> etend_l_env env p'
         end
         | PatternConstructor (_,l) -> List.fold_left etend_l_env env (List.map (fun p -> PatternArgument p) l)

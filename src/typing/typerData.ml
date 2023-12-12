@@ -1,6 +1,7 @@
 open Tast
 open Preprocessing
 open TyperExpression
+open GestionEnv
 
 let rec noms_distincts = function
         | [] -> true

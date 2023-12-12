@@ -1,6 +1,7 @@
 open Tast
 open Preprocessing.Ast
 open PrettyPrinterBeta
+open GestionEnv
 
 let rec unifie_sub sigma (start_p, end_p) = function
         | Tvar tvar, t -> sigma := (tvar, t)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
@@ -28,7 +29,23 @@ let rec resoud_instance g_env l_env start_p end_p i =
                 let i_list = trouve_g_env_schema_pour g_env start_p end_p i in
                 List.iter (resoud_instance g_env l_env start_p end_p) i_list
 
-let type_motif l_env p_1 = Tunit (*TODO*)
+let rec type_motif g_env l_env start_p end_p = function
+        | PatternArgument p -> begin match p with
+                                | PatargConstant (Integer _) -> Tint
+                                | PatargConstant (String _) -> Tstring
+                                | PatargConstant (Boolean _) -> Tbool
+                                | PatargIdent i -> Tvar i
+                                | Pattern p' -> type_motif g_env l_env start_p end_p p'
+                                end
+        | PatternConstructor (name, p_list) -> 
+                        (*TODO Vérifier qu'aucun motif ne contient deux fois la même variable*)
+                        let p_list' = List.map (fun p -> PatternArgument p) p_list in
+                        let _ = List.iter (fun motif -> contient_deux_fois_la_meme_var start_p end_p motif; ()) p_list' in
+                        (*Trouver une data declaration dont un des constructeur est sigma compatible pour un certain sigma*)
+                                let data_name, vars, tau_list = trouve_g_env_constructeur name g_env start_p end_p in
+                                let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
+                                List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (List.combine p_list' tau_list);
+                                Tconstr (data_name, substitution !sigma vars)
 
 let filtrage_exhaustif tau case_list = true (*TODO*)
 
@@ -107,10 +124,9 @@ let rec type_expression g_env l_env = function
 	| {e=Case (exp, case_list); location=(start_p,end_p)} ->
                         let tau = type_expression g_env l_env exp in
                         let p_1,e_1 = List.hd case_list in
-                        let p_1_bf = type_motif l_env p_1 in
                         let tau' = type_expression g_env (etend_l_env l_env p_1) e_1 in
                         if List.for_all (fun (p_i,e_i) ->
-                        true) case_list then
+                                type_motif g_env l_env start_p end_p p_1 = tau && type_expression g_env (etend_l_env l_env p_i) e_i = tau') case_list then
                                 if filtrage_exhaustif tau case_list then
                                         tau'
                                 else
