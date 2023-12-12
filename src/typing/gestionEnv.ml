@@ -127,6 +127,17 @@ let trouve_g_env_fonction f g_env start_p end_p =
 							else find q
         in find g_env.fonctions
 
+let pop_premier = function
+        | [] -> failwith "pop_premier d'une liste vide"
+        | x :: q -> (x,q)
+
+let rec list_of_premiers = function
+        | [[]] -> failwith "list_of_premiers d'une liste de listes vides"
+        | [x] -> let p,suite = pop_premier x in ([p], [x])
+        | x :: q -> let premiers, suites = list_of_premiers q in
+                        let p,suite = pop_premier x in
+                        (p::premiers, suite::suites)
+
 let rec pop_dernier = function
         | [] -> failwith "Il n'y a pas de dernier élément d'une liste vide"
         | [x] -> ([],x)

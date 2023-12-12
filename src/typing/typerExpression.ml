@@ -22,6 +22,7 @@ let rec bf env = function
                         with _ -> raise (Error (start_p, end_p, "Something something"))
 
 let rec resoud_instance g_env l_env start_p end_p i =
+        (*TODO Il faudrait peut-être utiliser sigma ?*)
         let i_name, tau_list = i in
         if trouve_l_env_instance l_env i || trouve_g_env_instance g_env i then
                 ()
@@ -38,27 +39,50 @@ let rec type_motif g_env l_env start_p end_p = function
                                 | Pattern p' -> type_motif g_env l_env start_p end_p p'
                                 end
         | PatternConstructor (name, p_list) -> 
-                        (*TODO Vérifier qu'aucun motif ne contient deux fois la même variable*)
                         let p_list' = List.map (fun p -> PatternArgument p) p_list in
                         let _ = List.iter (fun motif -> contient_deux_fois_la_meme_var start_p end_p motif; ()) p_list' in
-                        (*Trouver une data declaration dont un des constructeur est sigma compatible pour un certain sigma*)
-                                let data_name, vars, tau_list = trouve_g_env_constructeur name g_env start_p end_p in
-                                let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
-                                List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (List.combine p_list' tau_list);
-                                Tconstr (data_name, substitution !sigma vars)
+                        let data_name, vars, tau_list = trouve_g_env_constructeur name g_env start_p end_p in
+                        let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
+                        List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (List.combine p_list' tau_list);
+                        Tconstr (data_name, substitution !sigma vars)
 
-let rec filtrage_exhaustif l_env =true
-        (*function
+let rec filtrage_exhaustif l_env = function
         | _, [] -> false
-        | Tvar t, l -> filtrage_exhaustif l_env (type_of_var_l_env t, l)
-        | Teffect t, l -> filtrage_exhaustif l_env (type_of_var_l_env t, 
-                                                        List.map (fun (Teffect t') -> t') (List.filter (fun x -> match x with
-                                                                                                                | Tconstr _ -> true
+        | Teffect t, l -> 
+                        List.exists (fun x -> match x with
+                                                | PatternArgument (PatargIdent _) -> true
+                                                | _ -> false
+                                                ) l 
+                        || filtrage_exhaustif l_env (t, 
+                                                        List.map (fun (PatternConstructor("Effect",[t'])) -> PatternArgument t') (List.filter (fun x -> match x with
+                                                                                                                | PatternConstructor("Effect",_) -> true
                                                                                                                 | _ -> false) l)
                                                         )
-        | Tconstr (name, t_list), l -> true (*TODO*)
-        | _,_ -> false
-        *)
+        | Tconstr (name, t_list), l -> 
+                        List.exists (fun x -> match x with
+                                                | PatternArgument (PatargIdent _) -> true
+                                                | _ -> false
+                                                ) l 
+                        || (let candidats = ref (List.map (fun (PatternConstructor(_,p_list)) -> p_list) (List.filter (fun x -> begin match x with
+                                                                | PatternConstructor(name, p_list) -> true
+                                                                | _ -> false
+                                                                end) l)) in
+                                let t_list_ref = ref t_list in
+                                let res = ref true in
+                                for i=1 to List.length t_list do
+                                        let premiers, liste_des_restes = list_of_premiers !candidats in
+                                        let premier, reste = pop_premier !t_list_ref in
+                                        t_list_ref := reste;
+                                        candidats := liste_des_restes;
+                                        if not (filtrage_exhaustif l_env (premier, List.map (fun p -> PatternArgument p) premiers)) then
+                                                res := false;
+                                done;
+                                !res
+                        )
+        | _,l -> List.exists (fun x -> match x with
+                                                | PatternArgument (PatargIdent _) -> true
+                                                | _ -> false
+                                                ) l 
 
 let rec type_expression g_env l_env = function
         | {e=Constant c; location=(start_p,end_p)} -> 
@@ -134,7 +158,7 @@ let rec type_expression g_env l_env = function
                         let tau' = type_expression g_env (etend_l_env l_env p_1) e_1 in
                         if List.for_all (fun (p_i,e_i) ->
                                 type_motif g_env l_env start_p end_p p_1 = tau && type_expression g_env (etend_l_env l_env p_i) e_i = tau') case_list then
-                                if filtrage_exhaustif (case_list,tau) then
+                                if filtrage_exhaustif l_env (tau, List.map (fun (p_i,_) -> p_i) case_list) then
                                         tau'
                                 else
                                         raise (Error (start_p, end_p, "filtrage non exhaustif"))

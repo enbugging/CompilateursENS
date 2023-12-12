@@ -58,7 +58,8 @@ type schema = { vars : Vset.t; typ : typ }
 (*type env = { instances : tinstance list; bindings : schema Smap.t; fvars : Vset.t }*)
 type env = {instances : tinstance list; vars : string list; vdecl : (string*typ) list }
 
-let empty_env = {instances = []; vars = ["Unit"; "Boolean"; "Int"; "String"]; vdecl = [("Unit",Tunit); ("Boolean",Tbool); ("Int",Tint); ("String",Tstring)]}
+let empty_env = {instances = []; 
+                vars = ["Unit"; "Boolean"; "Int"; "String" (*TODO Ajouter les constructeurs ?*)];               vdecl = [("Unit",Tunit); ("Boolean",Tbool); ("Int",Tint); ("String",Tstring)]}
 
 exception Error of (Lexing.position * Lexing.position * string)
 
