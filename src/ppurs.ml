@@ -71,9 +71,10 @@ let () =
 			report (lexeme_start_p lb, lexeme_end_p lb);
 			eprintf "syntax error@.";
 			exit 1
-                | Tast.Error (start_e, end_e)->
-                        report (start_e, end_e);
-                        exit 1
+    | Tast.Error (start_e, end_e, msg_e)->
+      report (start_e, end_e);
+      print_string msg_e;
+      exit 1
 		| e ->
 			eprintf "Anomaly: %s\n@." (Printexc.to_string e);
 			exit 2

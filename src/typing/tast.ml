@@ -60,5 +60,5 @@ type env = {instances : tinstance list; vars : string list; vdecl : (string*typ)
 
 let empty_env = {instances = []; vars = ["Unit"; "Boolean"; "Int"; "String"]; vdecl = [("Unit",Tunit); ("Boolean",Tbool); ("Int",Tint); ("String",Tstring)]}
 
-exception Error of (Lexing.position * Lexing.position)
+exception Error of (Lexing.position * Lexing.position * string)
 
