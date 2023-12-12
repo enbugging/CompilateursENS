@@ -16,7 +16,7 @@ let rec separe_defs_suite name l = match l with
 let rec type_declarations g_env = function
         | [] -> g_env
 
-        | Ast.Definition (_,_,e) :: q -> let (start_p, end_p) = e.location in raise (Error (start_p, end_p, "Something someting 2"))
+        | Ast.Definition (_,_,e) :: q -> let (start_p, end_p) = e.location in raise (Error (start_p, end_p, "Definition typing not implemented"))
 
         | Ast.Data _ as d :: q -> type_declarations (declaration_de_type g_env d) q
 

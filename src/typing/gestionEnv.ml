@@ -100,7 +100,7 @@ let trouve_g_env_instance (env:global_environment) i =
 let trouve_g_env_schema_pour env start_p end_p i =
         let i_name, tau_list = i in
         let rec find = function
-                | [] ->  raise (Error (start_p, end_p, "Instance inexistante"))
+                | [] ->  raise (Error (start_p, end_p, "Nonexistent instance\n"))
                 | (i_list, (i_name',tau_list')) :: q ->
 					if i_name=i_name' && List.for_all (plus_precis env) (List.combine tau_list tau_list')
 					then i_list
@@ -109,54 +109,58 @@ let trouve_g_env_schema_pour env start_p end_p i =
         in find env.schemas
 
 let trouve_g_env_constructeur x g_env start_p end_p =
-        let rec find = function
-                | [] -> raise (Error (start_p, end_p, "Constructeur inexistant\n"))
-                | (data_name, vars, constructeurs) :: q -> 
-					begin match List.assoc_opt x constructeurs with
-					| None -> find q
-					| Some tau_list -> (data_name, vars, tau_list)
-					end
+        let rec find =
+			function
+			| [] -> raise (Error (start_p, end_p, "Nonexistent constructor\n"))
+			| (data_name, vars, constructeurs) :: q -> 
+				begin match List.assoc_opt x constructeurs with
+				| None -> find q
+				| Some tau_list -> (data_name, vars, tau_list)
+				end
 
         in find g_env.datas
 
 let trouve_g_env_fonction f g_env start_p end_p =
-        let rec find = function
-			| [] -> raise (Error (start_p, end_p, "Constructeur inexistant\n"))
+        let rec find =
+			function
+			| [] -> raise (Error (start_p, end_p, "Nonexistent constructor\n"))
 			| (nom, vars, instances, tau_list ) :: q -> 
 							if nom=f then (f,vars,instances, tau_list)
 							else find q
         in find g_env.fonctions
 
-let rec pop_dernier = function
-        | [] -> failwith "Il n'y a pas de dernier élément d'une liste vide"
-        | [x] -> ([],x)
-        | x :: q -> let l,d = pop_dernier q in (x::l,d)
+let rec pop_dernier = 
+	function
+	| [] -> failwith "Poping an empty list"
+	| [x] -> ([],x)
+	| x :: q -> let l,d = pop_dernier q in (x::l,d)
 
-let rec etend_l_env env = function
-        | PatternArgument p ->
-			begin
-				match p with
-				| PatargConstant _ -> env
-				| PatargIdent i -> if List.mem i env.vars then env else ajoute_l_env_var i env
-				| Pattern p' -> etend_l_env env p'
-        	end
-        | PatternConstructor (_,l) -> List.fold_left etend_l_env env (List.map (fun p -> PatternArgument p) l)
+let rec etend_l_env env = 
+	function
+	| PatternArgument p ->
+		begin
+			match p with
+			| PatargConstant _ -> env
+			| PatargIdent i -> if List.mem i env.vars then env else ajoute_l_env_var i env
+			| Pattern p' -> etend_l_env env p'
+		end
+	| PatternConstructor (_,l) -> List.fold_left etend_l_env env (List.map (fun p -> PatternArgument p) l)
 
 module Vset = Set.Make(String)
 
 let rec contient_deux_fois_la_meme_var start_p end_p motif = 
-        let rec aux vset = 
-			function
-            | PatternArgument p -> 
-				begin 
-					match p with
-					| PatargConstant _ -> vset
-					| PatargIdent i -> 
-									if Vset.mem i vset then 
-										raise (Error (start_p, end_p, "Un meme nom de variable apparait plusieurs fois dans le motif")) 
-									else vset
-					| Pattern p' -> aux vset p'
-        		end
-                | PatternConstructor (_,l) -> List.fold_left aux vset (List.map (fun p -> PatternArgument p) l)
-        in aux Vset.empty motif
+	let rec aux vset = 
+		function
+		| PatternArgument p -> 
+			begin 
+				match p with
+				| PatargConstant _ -> vset
+				| PatargIdent i -> 
+					if Vset.mem i vset then 
+						raise (Error (start_p, end_p, "Multiple occurrences of the same variable in pattern\n")) 
+					else vset
+				| Pattern p' -> aux vset p'
+			end
+			| PatternConstructor (_,l) -> List.fold_left aux vset (List.map (fun p -> PatternArgument p) l)
+	in aux Vset.empty motif
 
