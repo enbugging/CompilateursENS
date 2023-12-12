@@ -160,4 +160,3 @@ let rec contient_deux_fois_la_meme_var start_p end_p motif =
                 | PatternConstructor (_,l) -> List.fold_left aux vset (List.map (fun p -> PatternArgument p) l)
         in aux Vset.empty motif
 
-
