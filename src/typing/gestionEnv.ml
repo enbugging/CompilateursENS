@@ -16,6 +16,12 @@ let ajoute_l_env_assoc v tau e =
         vdecl = (v, tau)::(List.filter (fun (s,_) -> s<>v) e.vdecl)
 	}
 
+let ajoute_l_env_instance (i_name, l) e =
+        {instances = (i_name, l)::(List.filter (fun (s,_) -> s<>i_name) e.instances);
+        vars = e.vars;
+        vdecl = e.vdecl
+        }
+
 let ajoute_g_env_data nom vars c_list g_env = 
 	{
         types = g_env.types;
@@ -35,6 +41,26 @@ let ajoute_g_env_fonction nom vars i_list t_list g_env =
         instances = g_env.instances;
         schemas = g_env.schemas;
     }
+
+let ajoute_g_env_class nom vars fonctions g_env =
+        {
+                types = g_env.types;
+                datas = g_env.datas;
+                fonctions = g_env.fonctions;
+                classes = (nom, vars, fonctions)::g_env.classes;
+                instances = g_env.instances;
+                schemas = g_env.schemas;
+        }
+
+let ajoute_g_env_instance instances i g_env =
+        {
+                types = g_env.types;
+                datas = g_env.datas;
+                fonctions = g_env.fonctions;
+                classes = g_env.classes;
+                instances = i::g_env.instances;
+                schemas = (instances, i)::g_env.schemas;
+        }
 
 let substitution assoc_list l = 
         List.map (fun v -> 
@@ -59,7 +85,7 @@ let rec substitution_type assoc_list = function
 let type_of_var_l_env x start_p end_p env =
     begin
         try List.assoc x env.vdecl 
-        with Not_found -> raise (Error (start_p,end_p, "Variable not found in environment"))
+        with Not_found -> raise (Error (start_p,end_p, "Variable "^x^" not found in environment"))
     end
 
 (*l'environnement n'est pas utilisé, la fonction est peut-être mal utilisée*)
@@ -111,7 +137,7 @@ let trouve_g_env_schema_pour env start_p end_p i =
 let trouve_g_env_constructeur x g_env start_p end_p =
         let rec find =
 			function
-			| [] -> raise (Error (start_p, end_p, "Nonexistent constructor\n"))
+			| [] -> raise (Error (start_p, end_p, "Nonexistent constructor "^x^"\n"))
 			| (data_name, vars, constructeurs) :: q -> 
 				begin match List.assoc_opt x constructeurs with
 				| None -> find q
@@ -123,11 +149,81 @@ let trouve_g_env_constructeur x g_env start_p end_p =
 let trouve_g_env_fonction f g_env start_p end_p =
         let rec find =
 			function
-			| [] -> raise (Error (start_p, end_p, "Nonexistent constructor\n"))
+			| [] -> raise (Error (start_p, end_p, "Nonexistent fonction "^f^"\n"))
 			| (nom, vars, instances, tau_list ) :: q -> 
 							if nom=f then (f,vars,instances, tau_list)
 							else find q
         in find g_env.fonctions
+
+let rec trouve_g_env_data s g_env start_p end_p = 
+        let rec find = function
+        | [] -> raise (Error (start_p, end_p, "Nonexistent data "^s^" "))
+        | (data_name, vars, constructors) as res :: q when data_name = s -> res
+        | _ :: q -> find q
+        in find g_env.datas
+        
+let rec trouve_g_env_classe c g_env start_p end_p =
+        let rec find = function
+                | [] -> raise (Error (start_p, end_p, "Nonexistent classe "^c^" !"))
+                | (s, vars, funs) as res :: q when s=c -> res
+                | _ :: q -> find q
+        in find g_env.classes
+
+let rec existe_g_env_classe s g_env =
+        let rec find = function
+                | [] -> false
+                | (class_name,_,_) :: q -> class_name = s || find q
+        in find g_env.classes
+
+let rec existe_g_env_fonction s g_env =
+        let rec find = function
+                | [] -> false
+                | (f,_,_,_) :: q -> f=s || find q
+        in find g_env.fonctions
+
+let rec existe_g_env_data s g_env =
+        let rec find = function
+                | [] -> false
+                | (data_name,_,_) :: q -> data_name = s || find q
+        in find g_env.datas
+
+let rec existe_g_env_constructor s g_env =
+        let rec find = function
+                | [] -> false
+                | (_,_,l) :: q -> List.exists (fun (x,_) -> x=s) l || find q
+        in find g_env.datas
+
+let rec existe_g_env_type s g_env =
+        let rec find = function
+                | [] -> false
+                | (x,_) :: q -> s=x || find q
+        in find g_env.types
+
+let existe_g_env_without_error x_i g_env = existe_g_env_type x_i g_env || existe_g_env_classe x_i g_env || existe_g_env_fonction x_i g_env || existe_g_env_data x_i g_env || existe_g_env_constructor x_i g_env
+
+let existe_g_env x_i g_env start_p end_p =
+        if existe_g_env_type x_i g_env then
+                                        raise (Error (start_p, end_p, "Le type "^x_i^" existe deja"))
+                                else
+                                        if existe_g_env_classe x_i g_env then
+                                        raise (Error (start_p, end_p, "La classe "^x_i^" existe deja"))
+                                        else
+                                                if existe_g_env_fonction x_i g_env then
+                                        raise (Error (start_p, end_p, "La fonction "^x_i^" existe deja"))
+                                                else
+                                                        if existe_g_env_data x_i g_env then
+                                        raise (Error (start_p, end_p, "Le type "^x_i^" existe deja"))
+                                                else
+                                                        if existe_g_env_constructor x_i g_env then
+                                        raise (Error (start_p, end_p, "Le constructeur "^x_i^" existe deja"))
+                                                        else ()
+ 
+let existe_l_env x l_env =
+        match List.assoc_opt x l_env.vdecl with
+        | Some _ -> true
+        | None -> match List.assoc_opt x l_env.instances with
+                        | Some _ -> true
+                        | None -> false
 
 let pop_premier = function
         | [] -> failwith "pop_premier d'une liste vide"
@@ -141,14 +237,14 @@ let rec list_of_premiers = function
                         (p::premiers, suite::suites)
 
 let rec pop_dernier = function
-        | [] -> failwith "Il n'y a pas de dernier élément d'une liste vide"
-        | [x] -> ([],x)
-        | x :: q -> let l,d = pop_dernier q in (x::l,d)
-let rec pop_dernier = 
-	function
+       
 	| [] -> failwith "Poping an empty list"
 	| [x] -> ([],x)
 	| x :: q -> let l,d = pop_dernier q in (x::l,d)
+
+let rec etend_l_env_typed env = function
+        | TypeConstructor (Name(c,_,_),l) -> ajoute_l_env_var c (List.fold_left etend_l_env_typed env l)
+        | TypeIdent (Name(c,_,_)) -> ajoute_l_env_var c env
 
 let rec etend_l_env env = 
 	function

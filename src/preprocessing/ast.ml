@@ -8,6 +8,7 @@ type name = Name of ident*Lexing.position*Lexing.position
 type typed = 
   | TypeConstructor of ntype
   | TypeIdent of name
+
 and ntype = name * typed list
 
 
@@ -18,6 +19,7 @@ type constant =
 	| Boolean of bool
 	| Integer of int
 	| String of string
+
 type binaryOperation = 
 	| Plus
 	| Minus
@@ -26,7 +28,7 @@ type binaryOperation =
 	| Modulo
 	| And 
 	| Or
-  | Concatenate
+        | Concatenate
 	| Equal
 	| NotEqual
 	| LessThan
@@ -37,6 +39,7 @@ type binaryOperation =
 type pattern = 
   | PatternArgument of patarg 
   | PatternConstructor of ident * patarg list
+
 and patarg = 
   | PatargConstant of constant
   | PatargIdent of ident 

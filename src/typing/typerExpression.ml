@@ -3,23 +3,67 @@ open Preprocessing.Ast
 open PrettyPrinterBeta
 open GestionEnv
 
-let rec unifie_sub sigma (start_p, end_p) = function
-        | Tvar tvar, t -> sigma := (tvar, t)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
-        | _, Tvar _ -> ()
+let rec unpack g_env l_env tau = match tau with
+        | Tvar tvar -> begin match List.assoc_opt tvar l_env.vdecl with
+                                | Some(Tvar s) when s=tvar -> tau 
+                                | Some(x) -> unpack g_env l_env x
+                                | None -> tau
+        end
+        | Tconstr(tvar,[]) -> begin match List.assoc_opt tvar l_env.vdecl with
+                                | Some(Tvar s) when s=tvar -> tau 
+                                | Some(x) -> unpack g_env l_env x
+                                | None -> tau
+        end
+        | _ -> tau
+
+let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) = 
+        match (tau1,tau2) with
+        | Tvar tvar, _ -> begin match List.assoc_opt tvar !sigma with
+                        | Some(Tvar tvar) -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(x) -> unifie_sub sigma (start_p, end_p) (x,tau2)
+                        | None -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+        end
+        | Tconstr (tvar,[]), _ -> begin match List.assoc_opt tvar !sigma with
+                        | Some(Tvar tvar) -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(x) -> unifie_sub sigma (start_p, end_p) (x,tau2)
+                        | None -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+        end
+        | QuantifTvar _, _ -> ()
+        | _, QuantifTvar tvar -> raise (Error (start_p, end_p, "Impossible d'unifier la variable de type universellement quantifiée "^tvar^" !"))
+        | _, Tvar tvar -> begin match List.assoc_opt tvar !sigma with
+                        | Some(Tvar tvar) -> sigma := (tvar, tau1)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(t') -> unifie_sub sigma (start_p, end_p) (tau1, t')
+                        | None -> ()
+        end
+        | _, Tconstr (tvar,[]) -> begin match List.assoc_opt tvar !sigma with
+                        | Some(Tvar tvar) -> sigma := (tvar, tau1)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(t') -> unifie_sub sigma (start_p, end_p) (tau1, t')
+                        | None -> ()
+        end
+
         | Tint, Tint -> ()
         | Tstring, Tstring -> ()
         | Tbool, Tbool -> ()
         | Tunit, Tunit -> ()
         | Teffect t, Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
-        | Tconstr (_,t_list), Tconstr (_,t_list') -> List.iter (unifie_sub sigma (start_p, end_p)) (List.combine t_list t_list')
+        | Tconstr ("Effect", [t]), Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
+        | Teffect t, Tconstr ("Effect", [t']) -> unifie_sub sigma (start_p, end_p) (t,t')
+        | Tconstr (s,t_list), Tconstr (s',t_list') when s=s' -> List.iter (unifie_sub sigma (start_p, end_p)) (try List.combine t_list t_list' with _ -> raise (Error (start_p, end_p, "Arite differente sur deux constructeurs")))
         | _,_ -> raise (Error (start_p, end_p, "Expression du mauvais type\n"))
 
-let rec bf env = function
+let rec bf g_env env = function
         | TypeIdent (Name (s,start_p,end_p)) -> 
-                        type_of_var_l_env s start_p end_p env
+                        begin
+                        try 
+                                let res = type_of_var_l_env s start_p end_p env in
+                                print_string ("Bien formé "^s);
+                                res
+                        with _ ->
+                                        let res,_,_ = trouve_g_env_data s g_env start_p end_p in (Tvar res)
+                        end
         | TypeConstructor (Name (name,start_p,end_p), t_list) ->
-                        try Tconstr (name, List.map (bf env) t_list)
-                        with _ -> raise (Error (start_p, end_p, "Something something"))
+                        try Tconstr (name, List.map (bf g_env env) t_list)
+                        with _ -> raise (Error (start_p, end_p, "Unable to type "^name^" !"))
 
 let rec resoud_instance g_env l_env start_p end_p i =
         (*TODO Il faudrait peut-être utiliser sigma ?*)
@@ -43,7 +87,9 @@ let rec type_motif g_env l_env start_p end_p = function
                         let _ = List.iter (fun motif -> contient_deux_fois_la_meme_var start_p end_p motif; ()) p_list' in
                         let data_name, vars, tau_list = trouve_g_env_constructeur name g_env start_p end_p in
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
-                        List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (List.combine p_list' tau_list);
+
+                        sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
+                        List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (try List.combine p_list' tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments")));
                         Tconstr (data_name, substitution !sigma vars)
 
 let rec filtrage_exhaustif l_env = function
@@ -93,20 +139,27 @@ let rec type_expression g_env l_env = function
                         end
 
         | {e=Variable x; location=(start_p,end_p)} ->
-                        type_of_var_l_env x start_p end_p l_env
+                        begin
+                        try
+                                type_of_var_l_env x start_p end_p l_env
+                        with _ -> let res,_,_ = trouve_g_env_constructeur x g_env start_p end_p 
+                                in (Tvar res)
+                        end
 
 	| {e=TypedExpression (exp, tau); location=(start_p,end_p)} ->
-                        let tau' = bf l_env tau in
+                        let tau' = bf g_env l_env tau in
                         if type_expression g_env l_env exp = tau' then
                                 tau'
                         else
                                 raise (Error (start_p, end_p, "Le type suggéré ne correspond pas\n"));
 
 	| {e=BinaryOperation (e1, binop, e2); location=(start_p,end_p)} ->
-                        begin match type_expression g_env l_env e1, binop, type_expression g_env l_env e2 with
+                        let tau1 = unpack g_env l_env (type_expression g_env l_env e1) in
+                        let tau2 = unpack g_env l_env (type_expression g_env l_env e2) in
+                        begin match tau1, binop, tau2 with
                         | Tint, Plus, Tint | Tint, Minus, Tint | Tint, Times, Tint | Tint, Divide, Tint -> Tint 
                         | Tint, Equal, Tint | Tint, NotEqual, Tint | Tint, LessThan, Tint | Tint, LessThanOrEqual, Tint | Tint, GreaterThan, Tint | Tint, GreaterThanOrEqual, Tint -> Tbool 
-                        | Tbool, Equal, Tbool | Tbool, NotEqual, Tbool | Tstring, Equal, Tstring | Tstring, NotEqual, Tstring -> Tbool
+                        | _,Equal,_ | _,NotEqual,_ when tau1 = tau2 -> Tbool
                         | Tbool, And, Tbool | Tbool, Or, Tbool -> Tbool
                         | Tstring, Concatenate, Tstring -> Tstring
                         | _,_,_ -> raise (Error (start_p, end_p, "Opérandes invalide pour cette opération binaire"))
@@ -134,6 +187,7 @@ let rec type_expression g_env l_env = function
 	| {e=Let (assoc_list, exp); location=(start_p,end_p)} ->
                         let l_env' = ref l_env in
                         List.iter (fun (x_i,e_i) -> 
+                                existe_g_env x_i g_env start_p end_p;
                                 let tau_i = type_expression g_env !l_env' e_i in
                                 l_env' := ajoute_l_env_assoc x_i tau_i !l_env') assoc_list;
                         type_expression g_env !l_env' exp
@@ -141,14 +195,17 @@ let rec type_expression g_env l_env = function
         | {e=ExplicitConstructor (x, e_list); location=(start_p,end_p)} ->
                         let data_name, vars, tau_list = trouve_g_env_constructeur x g_env start_p end_p in
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
-                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (List.combine e_list tau_list);
+                        sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
+                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments")));
+
                         Tconstr (data_name, substitution !sigma vars)
 
 	| {e=FunctionCall (f, e_list); location=(start_p,end_p)} ->
                         let f,vars, instances, tau_list = trouve_g_env_fonction f g_env start_p end_p in
                         let tau_list, ret_type = pop_dernier tau_list in
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
-                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (List.combine e_list tau_list);
+                        sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
+                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !")));
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
                         substitution_type !sigma ret_type
 
@@ -156,12 +213,12 @@ let rec type_expression g_env l_env = function
                         let tau = type_expression g_env l_env exp in
                         let p_1,e_1 = List.hd case_list in
                         let tau' = type_expression g_env (etend_l_env l_env p_1) e_1 in
-                        if List.for_all (fun (p_i,e_i) ->
-                                type_motif g_env l_env start_p end_p p_1 = tau && type_expression g_env (etend_l_env l_env p_i) e_i = tau') case_list then
+                        List.iter (fun (p_i,e_i) ->
+                                let sigma = ref [] in
+                                sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
+                                unifie_sub sigma e_i.location (type_motif g_env l_env start_p end_p p_1, tau);
+                                unifie_sub sigma e_i.location (type_expression g_env (etend_l_env l_env p_i) e_i, tau')) case_list;
                                 if filtrage_exhaustif l_env (tau, List.map (fun (p_i,_) -> p_i) case_list) then
                                         tau'
                                 else
                                         raise (Error (start_p, end_p, "filtrage non exhaustif"))
-                        else
-                                raise (Error (start_p, end_p, "Une des expressions du filtrage n'est pas du bon type"))
-
