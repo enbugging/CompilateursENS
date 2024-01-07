@@ -10,16 +10,17 @@
 %token CASE CLASS DATA DO ELSE FORALL IF IMPORT IN INSTANCE LET MODULE OF THEN WHERE
 %token EOF
 %token LPAREN RPAREN LCURLY RCURLY COMMA EQUAL COLON SEMICOLON ARROW BRANCHING DOT VERTICAL_BAR
-%token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT CONCATENATE
+%token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT CONCATENATE 
 
 /* Priotity and associativity of tokens */
-%left OR AND
-%left CMP
+%left OR
+%left AND
+%left CONCATENATE
+%nonassoc NOT
+%nonassoc CMP
 %left PLUS MINUS
 %left TIMES DIVIDE MODULO
-%left CONCATENATE
 %nonassoc unary_minus
-%nonassoc CONSTANT LIDENT UIDENT IF DO LET CASE
 %nonassoc ELSE
 
 /* Start symbol */
@@ -124,27 +125,27 @@ atom:
     { Variable lident }
     | uident=UIDENT
     { Variable uident }
+    | LPAREN e = expr RPAREN
+    { e }
     | LPAREN lident = LIDENT COLON COLON t=typed RPAREN
     {TypedExpression ({
         e = Variable lident;
         location = $startpos, $endpos
     }, t)}
 
+atom_with_pos:
+    | a = atom
+    { { e = a;
+        location = $startpos, $endpos } }
+
 expression:
-    | LPAREN e = expression RPAREN
-    { e }
+    
     | e = expr
     { { e = e;
         location = $startpos, $endpos } }
 
-function_call:
-    | lident=LIDENT a_s = expression+
-    { FunctionCall (lident, a_s) }
-    | lident=LIDENT LPAREN RPAREN
-    { FunctionCall (lident, []) }
-
 expr:
-    |a = atom 
+    |a = atom
     { a }
     | MINUS e = expression %prec unary_minus
     { BinaryOperation ({ 
@@ -155,8 +156,8 @@ expr:
     {FunctionCall ("not", [e])}
     | e1 = expression b = binop e2 = expression
     {BinaryOperation (e1,b,e2)}
-    | f=function_call
-    { f }
+    | lident=LIDENT a_s = atom_with_pos+
+    { FunctionCall (lident, a_s) }
     | uident=UIDENT a_s = expression+
     { ExplicitConstructor (uident, a_s) }
     | IF e1 = expression THEN e2 = expression ELSE e3 =expression
