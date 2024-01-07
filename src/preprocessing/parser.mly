@@ -13,14 +13,14 @@
 %token PLUS MINUS TIMES DIVIDE MODULO AND OR NOT CONCATENATE
 
 /* Priotity and associativity of tokens */
-%left OR
-%left AND
-%left CONCATENATE
-%nonassoc NOT
-%nonassoc CMP
+%left OR AND
+%left CMP
 %left PLUS MINUS
 %left TIMES DIVIDE MODULO
+%left CONCATENATE
 %nonassoc unary_minus
+%nonassoc CONSTANT LIDENT UIDENT IF DO LET CASE
+%nonassoc ELSE
 
 /* Start symbol */
 %start file
@@ -137,11 +137,17 @@ expression:
     { { e = e;
         location = $startpos, $endpos } }
 
+function_call:
+    | lident=LIDENT a_s = expression+
+    { FunctionCall (lident, a_s) }
+    | lident=LIDENT LPAREN RPAREN
+    { FunctionCall (lident, []) }
+
 expr:
     |a = atom 
     { a }
     | MINUS e = expression %prec unary_minus
-    {BinaryOperation ({ 
+    { BinaryOperation ({ 
         e = Constant(Integer 0); 
         location = $startpos, $endpos
         }, Minus, e)}
@@ -149,8 +155,8 @@ expr:
     {FunctionCall ("not", [e])}
     | e1 = expression b = binop e2 = expression
     {BinaryOperation (e1,b,e2)}
-    | lident=LIDENT a_s = expression+
-    { FunctionCall (lident, a_s) }
+    | f=function_call
+    { f }
     | uident=UIDENT a_s = expression+
     { ExplicitConstructor (uident, a_s) }
     | IF e1 = expression THEN e2 = expression ELSE e3 =expression
