@@ -35,5 +35,6 @@ let declaration_de_classe g_env = function
 							fun g_env_acc (Ast.TypeDeclaration (Name (f,start_p,end_p), [], [], t_list)) ->
 								ajoute_g_env_fonction f vars [(c_name, List.map (fun v -> Tvar v) vars)] (List.map (bf g_env l_env) t_list) g_env_acc
 						) g_env fonctions
-                                        in ajoute_g_env_instance [] (c_name, List.map (fun v -> Tvar v) vars) g_env
+                                        in g_env
+                                        (*in ajoute_g_env_instance [] (c_name, List.map (fun v -> Tvar v) vars) g_env*)
     | _ -> failwith "Mauvais argument passé à declaration_de_classe"

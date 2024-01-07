@@ -56,18 +56,25 @@ let rec bf g_env env = function
                         begin
                         try 
                                 let res = type_of_var_l_env s start_p end_p env in
-                                print_string ("Bien formé "^s);
                                 res
                         with _ ->
                                         let res,_,_ = trouve_g_env_data s g_env start_p end_p in (Tvar res)
                         end
         | TypeConstructor (Name (name,start_p,end_p), t_list) ->
-                        try Tconstr (name, List.map (bf g_env env) t_list)
-                        with _ -> raise (Error (start_p, end_p, "Unable to type "^name^" !"))
+                        try let _,_,t_l = trouve_g_env_constructeur name g_env start_p end_p in
+                        if List.length t_l = List.length t_list then
+                                try Tconstr (name, List.map (bf g_env env) t_list)
+                                with _ -> raise (Error (start_p, end_p, "Unable to type "^name^" !"))
+                        else
+                                raise Not_found (*l'exception Not_found n'est pas appropriée mais il en fallait bien une*)
+                        with    | Not_found -> raise (Error (start_p, end_p, "Bad arity for "^name^" !"))
+                                | _ -> try Tconstr (name, List.map (bf g_env env) t_list)
+                                        with _ -> raise (Error (start_p, end_p, "Unable to type "^name^" !"))
 
 let rec resoud_instance g_env l_env start_p end_p i =
         (*TODO Il faudrait peut-être utiliser sigma ?*)
         let i_name, tau_list = i in
+        print_string ("On cherche à résoudre l'instance "^i_name);
         if trouve_l_env_instance l_env i || trouve_g_env_instance g_env i then
                 ()
         else
@@ -176,11 +183,9 @@ let rec type_expression g_env l_env = function
                                 raise (Error (start_p, end_p, "La première opérande du If n'est pas de type Boolean"))
 
         | {e=Do e_list; location=(start_p,end_p)} ->
+                        let sub = ref [] in
                         List.iter (fun exp -> 
-                                if type_expression g_env l_env exp = Teffect Tunit then
-                                        ()
-                                else
-                                        raise (Error (start_p, end_p, "L'expression devrait avoir le type Effect Unit"))
+                                unifie_sub sub (start_p, end_p) (type_expression g_env l_env exp, Teffect Tunit)
                         ) e_list;
                         Teffect Tunit
 

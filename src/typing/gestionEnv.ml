@@ -126,7 +126,7 @@ let trouve_g_env_instance (env:global_environment) i =
 let trouve_g_env_schema_pour env start_p end_p i =
         let i_name, tau_list = i in
         let rec find = function
-                | [] ->  raise (Error (start_p, end_p, "Nonexistent instance\n"))
+                | [] ->  raise (Error (start_p, end_p, "Nonexistent schema for "^i_name^" \n"))
                 | (i_list, (i_name',tau_list')) :: q ->
 					if i_name=i_name' && List.for_all (plus_precis env) (List.combine tau_list tau_list')
 					then i_list
