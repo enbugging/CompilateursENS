@@ -175,10 +175,9 @@ let rec type_expression g_env l_env = function
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
                         if type_expression g_env l_env e1 = Tbool then
                                 let tau = type_expression g_env l_env e2 in
-                                if type_expression g_env l_env e3 = tau then
-                                        tau
-                                else
-                                        raise (Error (start_p,end_p, "Le deux expressions de retour du If doivent etre de meme type"))
+                                let sub = ref [] in
+                                unifie_sub sub (start_p,end_p) (type_expression g_env l_env e3, tau);
+                                tau
                         else
                                 raise (Error (start_p, end_p, "La première opérande du If n'est pas de type Boolean"))
 
