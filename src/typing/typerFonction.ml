@@ -86,9 +86,9 @@ let declaration_de_fonction g_env declaration definitions =
                         let b, col = colonne_de_filtrage g_env l_env definitions in
                         if b then
                                 let maped_defs = List.map (fun (Ast.Definition(_,p_list,_)) -> Ast.PatternArgument (List.nth p_list col)) definitions in
-                                if TyperExpression.filtrage_exhaustif l_env (List.nth tau_list2 col, maped_defs) then
+                                if TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (List.nth tau_list2 col, maped_defs) then
                                         let maped_defs_shorted,_ = pop_dernier maped_defs in
-                                if List.length maped_defs_shorted > 0 && TyperExpression.filtrage_exhaustif l_env (List.nth tau_list2 col, maped_defs_shorted) then
+                                if List.length maped_defs_shorted > 0 && TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (List.nth tau_list2 col, maped_defs_shorted) then
                                         raise (Error (start_pos, end_pos, "La fonction "^name^" comporte au moins une définition de trop"))
                                 else
                                         ajoute_g_env_fonction name vars instances' tau_list' g_env
