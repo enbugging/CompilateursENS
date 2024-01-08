@@ -74,12 +74,14 @@ let rec bf g_env env = function
 let rec resoud_instance g_env l_env start_p end_p i =
         (*TODO Il faudrait peut-être utiliser sigma ?*)
         let i_name, tau_list = i in
-        print_string ("On cherche à résoudre l'instance "^i_name);
         if trouve_l_env_instance l_env i || trouve_g_env_instance g_env i then
                 ()
         else
                 let i_list = trouve_g_env_schema_pour g_env start_p end_p i in
-                List.iter (resoud_instance g_env l_env start_p end_p) i_list
+                if List.length i_list > 0 then
+                        List.iter (resoud_instance g_env l_env start_p end_p) i_list
+                else
+                        raise (Error (start_p, end_p, "Impossible de résoudre l'instance "^i_name^" !"))
 
 let rec type_motif g_env l_env start_p end_p = function
         | PatternArgument p -> begin match p with
@@ -218,6 +220,8 @@ let rec type_expression g_env l_env = function
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                         List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !")));
+                        print_string "\nOn est à la ligne";
+                        print_int (end_p.pos_lnum);
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
                         substitution_type !sigma ret_type
 

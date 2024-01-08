@@ -53,7 +53,11 @@ let declaration_d_instance g_env = function
                         List.iter (fun (Ast.Definition ((Name (f,start_p,end_p)),pat_l, e) as d) -> 
                         def_conforme g_env l_env start_p end_p d (trouve_fun start_p end_p f funs)) decl_list;
                         (*TODO* vérifier qu'il n'y a pas plusieurs instances unifiables*)
-                        ajoute_g_env_instance instances i g_env
+                        try 
+                                List.iter (resoud_instance g_env empty_env start_p end_p) instances;
+                                ajoute_g_env_instance instances i g_env;
+                        with _ ->
+                                ajoute_g_env_schema instances i g_env
 
         | _ -> failwith "On attendait ici une instance"
         
