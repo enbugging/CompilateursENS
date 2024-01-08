@@ -81,7 +81,7 @@ let declaration_de_fonction g_env declaration definitions =
                         List.iter (verification_definition (ajoute_g_env_fonction name vars instances' tau_list' g_env) l_env vars tau_list2 tau_ret) definitions;
                         let b, col = colonne_de_filtrage g_env l_env definitions in
                         if b then
-                                if filtrage_exhaustif definitions col (List.nth tau_list col) then
+                                if TyperExpression.filtrage_exhaustif l_env (List.nth tau_list2 col, List.map (fun (Ast.Definition(_,p_list,_)) -> Ast.PatternArgument (List.nth p_list col)) definitions) then
                                         ajoute_g_env_fonction name vars instances' tau_list' g_env
                                 else
                                         raise (Error (start_pos, end_pos, "Filtrage non exhaustif de la colonne "^(string_of_int col)))

@@ -120,6 +120,8 @@ let rec filtrage_exhaustif l_env = function
                                                                 | PatternConstructor(name, p_list) -> true
                                                                 | _ -> false
                                                                 end) l)) in
+                        if List.length !candidats = 0 then false
+                        else
                                 let t_list_ref = ref t_list in
                                 let res = ref true in
                                 for i=1 to List.length t_list do
@@ -173,13 +175,11 @@ let rec type_expression g_env l_env = function
                         end
 
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
-                        if type_expression g_env l_env e1 = Tbool then
-                                let tau = type_expression g_env l_env e2 in
-                                let sub = ref [] in
-                                unifie_sub sub (start_p,end_p) (type_expression g_env l_env e3, tau);
-                                tau
-                        else
-                                raise (Error (start_p, end_p, "La première opérande du If n'est pas de type Boolean"))
+                        let sub = ref [] in
+                        unifie_sub sub (start_p,end_p) (type_expression g_env l_env e1, Tbool);
+                        let tau = type_expression g_env l_env e2 in
+                        unifie_sub sub (start_p,end_p) (type_expression g_env l_env e3, tau);
+                        tau
 
         | {e=Do e_list; location=(start_p,end_p)} ->
                         let sub = ref [] in
