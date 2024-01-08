@@ -158,7 +158,7 @@ expr:
     {BinaryOperation (e1,b,e2)}
     | lident=LIDENT a_s = atom_with_pos+
     { FunctionCall (lident, a_s) }
-    | uident=UIDENT a_s = expression+
+    | uident=UIDENT a_s = atom_with_pos+
     { ExplicitConstructor (uident, a_s) }
     | IF e1 = expression THEN e2 = expression ELSE e3 =expression
     {Conditional (e1,e2,e3)}

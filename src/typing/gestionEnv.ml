@@ -1,4 +1,5 @@
 open Tast
+open PrettyPrinterBeta
 open Preprocessing.Ast
 
 (*Fonctions de gestion des environnements et misc*)
@@ -62,6 +63,16 @@ let ajoute_g_env_instance instances i g_env =
                 schemas = (instances, i)::g_env.schemas;
         }
 
+let ajoute_g_env_schema instances i g_env =
+        {
+                types = g_env.types;
+                datas = g_env.datas;
+                fonctions = g_env.fonctions;
+                classes = g_env.classes;
+                instances = g_env.instances;
+                schemas = (instances, i)::g_env.schemas;
+        }
+
 let substitution assoc_list l = 
         List.map (fun v -> 
 			match List.assoc_opt v assoc_list with
@@ -91,13 +102,14 @@ let type_of_var_l_env x start_p end_p env =
 (*l'environnement n'est pas utilisé, la fonction est peut-être mal utilisée*)
 let rec plus_precis env = function
         | _,Tvar _ -> true
+        | Tvar _, _ -> true
         | Tint, Tint -> true
         | Tstring, Tstring -> true
 		| Tbool, Tbool -> true
 		| Tunit, Tunit -> true
 		| Teffect t, Teffect t' -> plus_precis env (t,t')
         | Tconstr (s,t_list), Tconstr (s',t_list') -> s=s' && List.for_all (plus_precis env) (List.combine t_list t_list')
-        | _,_ -> false
+        | tau1,tau2 -> false
 
 let trouve_l_env_instance env i =
         let i_name, tau_list = i in
@@ -106,7 +118,7 @@ let trouve_l_env_instance env i =
                 | (i_name', tau_list') :: q -> 
 					(i_name=i_name' && List.for_all (fun (t,t') ->
 							plus_precis env (t, t')
-					) (List.combine tau_list tau_list'))
+					) (List.combine tau_list' tau_list))
 					|| find q
 
         in find env.instances
@@ -126,7 +138,7 @@ let trouve_g_env_instance (env:global_environment) i =
 let trouve_g_env_schema_pour env start_p end_p i =
         let i_name, tau_list = i in
         let rec find = function
-                | [] ->  raise (Error (start_p, end_p, "Nonexistent schema for "^i_name^" \n"))
+                | [] ->  raise (Error (start_p, end_p, "On est là: Nonexistent schema for "^i_name^" \n"))
                 | (i_list, (i_name',tau_list')) :: q ->
 					if i_name=i_name' && List.for_all (plus_precis env) (List.combine tau_list tau_list')
 					then i_list

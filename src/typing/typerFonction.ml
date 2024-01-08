@@ -8,7 +8,15 @@ let colonne_de_filtrage g_env l_env definitions =
         let rec scan_horizontal start_p end_p col = function
                 | [] -> (false,-1)
                 | p :: q -> begin match type_motif g_env l_env start_p end_p p with
-                                | Tvar _ -> scan_horizontal start_p end_p (col+1) q
+                                | Tvar t -> 
+                                        let b,c = scan_horizontal start_p end_p (col+1) q in
+                                        if existe_g_env_constructor t g_env then
+                                                if b then
+                                                        raise (Error (start_p, end_p, "Plusieurs colonnes de filtrage dans une même ligne"))
+                                                else (true, col)
+                                        else
+                                                (b,c) 
+
                                 | _ -> 
                                                 let b,_ = scan_horizontal start_p end_p (col+1) q in 
                                 if b then
@@ -34,10 +42,6 @@ let colonne_de_filtrage g_env l_env definitions =
                                 else
                                         scan_vertical q
          in scan_vertical definitions
-
-let filtrage_exhaustif definitions col tau = 
-        let filtrage = List.map (fun (Ast.Definition (_, p_list,_)) -> List.nth p_list col) definitions in true
-
 
 let rec pattern_distincts start_p end_p = function
         | [] -> ()
@@ -81,10 +85,18 @@ let declaration_de_fonction g_env declaration definitions =
                         List.iter (verification_definition (ajoute_g_env_fonction name vars instances' tau_list' g_env) l_env vars tau_list2 tau_ret) definitions;
                         let b, col = colonne_de_filtrage g_env l_env definitions in
                         if b then
-                                if filtrage_exhaustif definitions col (List.nth tau_list col) then
+                                let maped_defs = List.map (fun (Ast.Definition(_,p_list,_)) -> Ast.PatternArgument (List.nth p_list col)) definitions in
+                                if TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (List.nth tau_list2 col, maped_defs) then
+                                        let maped_defs_shorted,_ = pop_dernier maped_defs in
+                                if List.length maped_defs_shorted > 0 && TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (List.nth tau_list2 col, maped_defs_shorted) then
+                                        raise (Error (start_pos, end_pos, "La fonction "^name^" comporte au moins une définition de trop"))
+                                else
                                         ajoute_g_env_fonction name vars instances' tau_list' g_env
                                 else
                                         raise (Error (start_pos, end_pos, "Filtrage non exhaustif de la colonne "^(string_of_int col)))
                         else
-                                ajoute_g_env_fonction name vars instances' tau_list' g_env
+                                if List.length definitions > 1 then
+                                        raise (Error (start_pos, end_pos, "La fonction "^name^" comporte au moins une définition de trop"))
+                                else
+                                        ajoute_g_env_fonction name vars instances' tau_list' g_env
         | _ -> failwith "Il devrait s'agire d'une TypeDeclaration"

@@ -48,12 +48,16 @@ let declaration_d_instance g_env = function
                                                         | Tvar i_name -> (i_name,[])
                                                         | Tconstr x -> x
                                                         ) (List.map (bf g_env l_env) typed_list) in
-                        let instances, i = pop_dernier typed_instances in
-                        let l_env = List.fold_left (fun e i -> ajoute_l_env_instance i e) l_env instances in
+                        let i,instances = pop_premier typed_instances in
+                        let l_env = List.fold_left (fun e i' -> ajoute_l_env_instance i' e) l_env instances in
                         List.iter (fun (Ast.Definition ((Name (f,start_p,end_p)),pat_l, e) as d) -> 
                         def_conforme g_env l_env start_p end_p d (trouve_fun start_p end_p f funs)) decl_list;
                         (*TODO* vérifier qu'il n'y a pas plusieurs instances unifiables*)
-                        ajoute_g_env_instance instances i g_env
+                        try 
+                                List.iter (resoud_instance g_env empty_env start_p end_p) instances;
+                                ajoute_g_env_instance instances i g_env;
+                        with _ ->
+                                ajoute_g_env_schema instances i g_env
 
         | _ -> failwith "On attendait ici une instance"
         

@@ -19,24 +19,24 @@ let rec unpack g_env l_env tau = match tau with
 let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) = 
         match (tau1,tau2) with
         | Tvar tvar, _ -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
                         | Some(x) -> unifie_sub sigma (start_p, end_p) (x,tau2)
-                        | None -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | None -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
         end
         | Tconstr (tvar,[]), _ -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
                         | Some(x) -> unifie_sub sigma (start_p, end_p) (x,tau2)
-                        | None -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | None -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
         end
         | QuantifTvar _, _ -> ()
         | _, QuantifTvar tvar -> raise (Error (start_p, end_p, "Impossible d'unifier la variable de type universellement quantifiée "^tvar^" !"))
         | _, Tvar tvar -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau1)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau1)::l'
                         | Some(t') -> unifie_sub sigma (start_p, end_p) (tau1, t')
                         | None -> ()
         end
         | _, Tconstr (tvar,[]) -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau1)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau1)::l'
                         | Some(t') -> unifie_sub sigma (start_p, end_p) (tau1, t')
                         | None -> ()
         end
@@ -48,7 +48,7 @@ let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) =
         | Teffect t, Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
         | Tconstr ("Effect", [t]), Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
         | Teffect t, Tconstr ("Effect", [t']) -> unifie_sub sigma (start_p, end_p) (t,t')
-        | Tconstr (s,t_list), Tconstr (s',t_list') when s=s' -> List.iter (unifie_sub sigma (start_p, end_p)) (try List.combine t_list t_list' with _ -> raise (Error (start_p, end_p, "Arite differente sur deux constructeurs")))
+        | Tconstr (s,t_list), Tconstr (s',t_list') when s=s' -> List.iter (fun x -> try unifie_sub sigma (start_p, end_p) x with _ -> ()) (try List.combine t_list t_list' with _ -> raise (Error (start_p, end_p, "Arite differente sur deux constructeurs")))
         | _,_ -> raise (Error (start_p, end_p, "Expression du mauvais type\n"))
 
 let rec bf g_env env = function
@@ -74,12 +74,14 @@ let rec bf g_env env = function
 let rec resoud_instance g_env l_env start_p end_p i =
         (*TODO Il faudrait peut-être utiliser sigma ?*)
         let i_name, tau_list = i in
-        print_string ("On cherche à résoudre l'instance "^i_name);
         if trouve_l_env_instance l_env i || trouve_g_env_instance g_env i then
                 ()
         else
                 let i_list = trouve_g_env_schema_pour g_env start_p end_p i in
-                List.iter (resoud_instance g_env l_env start_p end_p) i_list
+                if List.length i_list > 0 then
+                        List.iter (resoud_instance g_env l_env start_p end_p) i_list
+                else
+                        raise (Error (start_p, end_p, "Impossible de résoudre l'instance "^i_name^" !"))
 
 let rec type_motif g_env l_env start_p end_p = function
         | PatternArgument p -> begin match p with
@@ -99,27 +101,37 @@ let rec type_motif g_env l_env start_p end_p = function
                         List.iter (fun (p_i,tau_i) -> unifie_sub sigma (start_p, end_p) ((type_motif g_env l_env start_p end_p p_i), tau_i)) (try List.combine p_list' tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments")));
                         Tconstr (data_name, substitution !sigma vars)
 
-let rec filtrage_exhaustif l_env = function
+let rec filtrage_exhaustif g_env l_env start_p end_p = function
         | _, [] -> false
         | Teffect t, l -> 
                         List.exists (fun x -> match x with
                                                 | PatternArgument (PatargIdent _) -> true
                                                 | _ -> false
                                                 ) l 
-                        || filtrage_exhaustif l_env (t, 
+                        || filtrage_exhaustif g_env l_env start_p end_p (t, 
                                                         List.map (fun (PatternConstructor("Effect",[t'])) -> PatternArgument t') (List.filter (fun x -> match x with
                                                                                                                 | PatternConstructor("Effect",_) -> true
                                                                                                                 | _ -> false) l)
                                                         )
         | Tconstr (name, t_list), l -> 
                         List.exists (fun x -> match x with
-                                                | PatternArgument (PatargIdent _) -> true
+                                                | PatternArgument (PatargIdent y) -> not (existe_g_env_constructor y g_env)
                                                 | _ -> false
                                                 ) l 
+                        || (*On vérifie que tous les constructeurs d'arités 0 apparaissent dans la liste*) (List.length t_list = 0 && existe_g_env_data name g_env && (
+
+                                let _,_,constructeurs = trouve_g_env_data name g_env start_p end_p in
+                                let constructeurs_dans_les_patterns = List.map (fun x -> match x with
+                                                                                        | PatternArgument (PatargIdent y) -> if existe_g_env_constructor y g_env then y else "_" 
+                                                                                        | _ -> "_") l in
+                                List.for_all (fun y -> List.mem y constructeurs_dans_les_patterns) (List.map (fun (x,_) -> x) constructeurs)
+                        ))
                         || (let candidats = ref (List.map (fun (PatternConstructor(_,p_list)) -> p_list) (List.filter (fun x -> begin match x with
                                                                 | PatternConstructor(name, p_list) -> true
                                                                 | _ -> false
                                                                 end) l)) in
+                        if List.length !candidats = 0 then false
+                        else
                                 let t_list_ref = ref t_list in
                                 let res = ref true in
                                 for i=1 to List.length t_list do
@@ -127,7 +139,7 @@ let rec filtrage_exhaustif l_env = function
                                         let premier, reste = pop_premier !t_list_ref in
                                         t_list_ref := reste;
                                         candidats := liste_des_restes;
-                                        if not (filtrage_exhaustif l_env (premier, List.map (fun p -> PatternArgument p) premiers)) then
+                                        if not (filtrage_exhaustif g_env l_env start_p end_p (premier, List.map (fun p -> PatternArgument p) premiers)) then
                                                 res := false;
                                 done;
                                 !res
@@ -173,13 +185,11 @@ let rec type_expression g_env l_env = function
                         end
 
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
-                        if type_expression g_env l_env e1 = Tbool then
-                                let tau = type_expression g_env l_env e2 in
-                                let sub = ref [] in
-                                unifie_sub sub (start_p,end_p) (type_expression g_env l_env e3, tau);
-                                tau
-                        else
-                                raise (Error (start_p, end_p, "La première opérande du If n'est pas de type Boolean"))
+                        let sub = ref [] in
+                        unifie_sub sub (start_p,end_p) (type_expression g_env l_env e1, Tbool);
+                        let tau = type_expression g_env l_env e2 in
+                        unifie_sub sub (start_p,end_p) (type_expression g_env l_env e3, tau);
+                        tau
 
         | {e=Do e_list; location=(start_p,end_p)} ->
                         let sub = ref [] in
@@ -210,6 +220,8 @@ let rec type_expression g_env l_env = function
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                         List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !")));
+                        print_string "\nOn est à la ligne";
+                        print_int (end_p.pos_lnum);
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
                         substitution_type !sigma ret_type
 
@@ -222,7 +234,7 @@ let rec type_expression g_env l_env = function
                                 sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                                 unifie_sub sigma e_i.location (type_motif g_env l_env start_p end_p p_1, tau);
                                 unifie_sub sigma e_i.location (type_expression g_env (etend_l_env l_env p_i) e_i, tau')) case_list;
-                                if filtrage_exhaustif l_env (tau, List.map (fun (p_i,_) -> p_i) case_list) then
+                                if filtrage_exhaustif g_env l_env start_p end_p (tau, List.map (fun (p_i,_) -> p_i) case_list) then
                                         tau'
                                 else
                                         raise (Error (start_p, end_p, "filtrage non exhaustif"))
