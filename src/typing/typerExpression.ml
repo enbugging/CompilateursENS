@@ -19,24 +19,24 @@ let rec unpack g_env l_env tau = match tau with
 let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) = 
         match (tau1,tau2) with
         | Tvar tvar, _ -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
                         | Some(x) -> unifie_sub sigma (start_p, end_p) (x,tau2)
-                        | None -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | None -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
         end
         | Tconstr (tvar,[]), _ -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
                         | Some(x) -> unifie_sub sigma (start_p, end_p) (x,tau2)
-                        | None -> sigma := (tvar, tau2)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | None -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
         end
         | QuantifTvar _, _ -> ()
         | _, QuantifTvar tvar -> raise (Error (start_p, end_p, "Impossible d'unifier la variable de type universellement quantifiée "^tvar^" !"))
         | _, Tvar tvar -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau1)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau1)::l'
                         | Some(t') -> unifie_sub sigma (start_p, end_p) (tau1, t')
                         | None -> ()
         end
         | _, Tconstr (tvar,[]) -> begin match List.assoc_opt tvar !sigma with
-                        | Some(Tvar tvar) -> sigma := (tvar, tau1)::(List.filter (fun (a,b) -> a<>tvar) !sigma)
+                        | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau1)::l'
                         | Some(t') -> unifie_sub sigma (start_p, end_p) (tau1, t')
                         | None -> ()
         end
@@ -48,7 +48,7 @@ let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) =
         | Teffect t, Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
         | Tconstr ("Effect", [t]), Teffect t' -> unifie_sub sigma (start_p, end_p) (t,t')
         | Teffect t, Tconstr ("Effect", [t']) -> unifie_sub sigma (start_p, end_p) (t,t')
-        | Tconstr (s,t_list), Tconstr (s',t_list') when s=s' -> List.iter (unifie_sub sigma (start_p, end_p)) (try List.combine t_list t_list' with _ -> raise (Error (start_p, end_p, "Arite differente sur deux constructeurs")))
+        | Tconstr (s,t_list), Tconstr (s',t_list') when s=s' -> List.iter (fun x -> try unifie_sub sigma (start_p, end_p) x with _ -> ()) (try List.combine t_list t_list' with _ -> raise (Error (start_p, end_p, "Arite differente sur deux constructeurs")))
         | _,_ -> raise (Error (start_p, end_p, "Expression du mauvais type\n"))
 
 let rec bf g_env env = function
