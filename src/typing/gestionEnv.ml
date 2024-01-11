@@ -13,8 +13,8 @@ let ajoute_l_env_var v e =
 let ajoute_l_env_assoc v tau e =
 	{
 		instances=e.instances;
-        vars = v::(List.filter (fun s -> s<>v) e.vars);
-        vdecl = (v, tau)::(List.filter (fun (s,_) -> s<>v) e.vdecl)
+        vars = v::List.filter (fun s -> s<>v) e.vars;
+        vdecl = (v, tau)::List.filter (fun (s,_) -> s<>v) e.vdecl
 	}
 
 let ajoute_l_env_instance (i_name, l) e =
@@ -247,6 +247,7 @@ let rec list_of_premiers = function
         | x :: q -> let premiers, suites = list_of_premiers q in
                         let p,suite = pop_premier x in
                         (p::premiers, suite::suites)
+        | _ -> failwith "format de liste improbable pour list_of_premiers"
 
 let rec pop_dernier = function
        

@@ -13,7 +13,7 @@ let declaration_de_type g_env = function
                                 if existe_g_env_data name g_env then
                                         raise (Error (start_p, end_p, "Le type "^name^" existe deja"))
                                 else
-		let vars = List.map (fun (Ast.TypeIdent (Name (s,_,_))) -> s) vars in
+		let vars = List.map (fun p -> match p with Ast.TypeIdent (Name (s,_,_)) -> s | _ -> failwith "Cas impossible") vars in
 		if not (noms_distincts vars) then raise (Error (start_p, end_p, "Variables cannot have the same name\n"))
 		else
 			if not (noms_distincts (List.map (fun (Ast.Constructor (Name (x,_,_),_)) -> x) c_list)) then

@@ -23,7 +23,6 @@ type tvar = string
 	}
 *)
 
-
 type tdectype = string * typ
 type tdecdata = string * string list * tconstr list
 type tinstance = string * typ list
@@ -68,7 +67,7 @@ module Vmap = Map.Make(V)
 type env = {instances : tinstance list; vars : string list; vdecl : (string*typ) list }
 
 let empty_env = {instances = []; 
-                vars = ["Unit"; "Boolean"; "Int"; "String" (*TODO Ajouter les constructeurs ?*)];               vdecl = [("Unit",Tunit); ("Boolean",Tbool); ("Int",Tint); ("String",Tstring)]}
+                vars = ["Unit"; "Boolean"; "Int"; "String"]; vdecl = [("Unit",Tunit); ("Boolean",Tbool); ("Int",Tint); ("String",Tstring)]}
 
 exception Error of (Lexing.position * Lexing.position * string)
 let error l s =
