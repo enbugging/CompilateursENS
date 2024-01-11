@@ -1,6 +1,6 @@
 (library
  (name production)
- (libraries typing preprocessing)
- (modules production)
+ (libraries preprocessing typing)
+ (modules X86_64 production)
  (flags ()))
 
