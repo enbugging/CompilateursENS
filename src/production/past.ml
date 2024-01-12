@@ -10,11 +10,11 @@ type p_expr =
 	| PTypedExpression of p_expr * typ
 	| PBinaryOperation of p_expr * binaryOperation * p_expr * typ
 	| PConditional of p_expr * p_expr * p_expr * typ
-        | PExplicitConstructor of ident * p_expr list * typ
-	| FunctionCall of ident * p_expr list * typ
-	| Do of p_expr list
-	| Let of (ident * p_expr) list * p_expr * typ
-	| Case of p_expr * (pattern * p_expr) list * typ
+        | PExplicitConstructor of int * p_expr list * typ
+	| PFunctionCall of ident * p_expr list * typ
+	| PDo of p_expr list
+	| PLet of (int * p_expr) list * p_expr * typ
+	| PCase of p_expr * (pattern * p_expr) list * typ
 
 type p_def = PDefinition of ident * patarg list * p_expr * typ
 
