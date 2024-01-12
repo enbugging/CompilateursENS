@@ -1,4 +1,5 @@
 open Preprocessing.Ast
+open Typing.Tast
 
 type ident = string
 
