@@ -28,7 +28,7 @@ let log_code env (text, data) =
 		string "%s\n"
 	in
 	let text = text++
-		movq (ilab ~ofs:8 rdi) !%rsi ++ (* Move the pointer to rsi *)
+		popq !%rsi ++ (* Move the pointer to rsi *)
 		movq (ilabl string_format) !%rdi ++ (* Move the address of the string to rdi *)
 		xorq !%rax !%rax ++ (* Set rax to 0 *)
 		call "printf" ++ (* Call printf *)
