@@ -44,6 +44,7 @@ let () =
 		(* Typing *)
                 let t = Typer.type_file f in
 		if !type_only then exit 0;
+
 	with
 		| Lexer.Illegal_character s ->
 			report (lexeme_start_p lb, lexeme_end_p lb);

@@ -101,8 +101,9 @@ let verification_definition g_env l_env vars tau_list tau_ret = function
                         sub2 := List.filter (fun (a,b) -> not (existe_l_env a l_env)) !sub2;
 
                         let l_env = List.fold_left (fun env (a,b) -> ajoute_l_env_assoc a b env) l_env !sub2 in
-                        
-                        unifie_sub sub (start_pos, end_pos) (type_expression g_env l_env e, tau_ret)
+                        let t_e = type_expression g_env l_env e in
+                        let _ = unifie_sub sub (start_pos, end_pos) (type_of_texpr t_e, tau_ret) in
+                        t_e
 
         | _ -> failwith "On attendait ici une definition de fonction"
 
@@ -128,27 +129,33 @@ let declaration_de_fonction g_env declaration definitions =
                                                 | Tconstr (x,_) -> if existe_g_env_without_error x g_env || existe_l_env x l_env then () else raise (Error (start_pos, end_pos, "Le type "^x^" devrait exister")) 
                                                 | _ -> ()) tau_list';
                         let tau_list2, tau_ret = pop_dernier tau_list' in
-                        List.iter (verification_definition (ajoute_g_env_fonction name vars instances' tau_list' g_env) l_env vars tau_list2 tau_ret) definitions;
+                        let t_expr_list = List.map (verification_definition (ajoute_g_env_fonction name vars instances' tau_list' g_env) l_env vars tau_list2 tau_ret) definitions in
                         let b, col = colonne_de_filtrage g_env l_env definitions in
                         if b then
                                 let maped_defs = List.map (fun p -> match p with Ast.Definition(_,p_list,_) -> Ast.PatternArgument (List.nth p_list col) | _ -> failwith "Cas impossible") definitions in
-                                if TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (List.nth tau_list2 col, maped_defs) then
+                                let type_a_filtrer = List.nth tau_list2 col in
+                                if TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (type_a_filtrer, maped_defs) then
                                         let maped_defs_shorted,_ = pop_dernier maped_defs in
-                                if List.length maped_defs_shorted > 0 && TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (List.nth tau_list2 col, maped_defs_shorted) then
+                                if List.length maped_defs_shorted > 0 && TyperExpression.filtrage_exhaustif g_env l_env start_pos end_pos (type_a_filtrer, maped_defs_shorted) then
                                         raise (Error (start_pos, end_pos, "La fonction "^name^" comporte au moins une définition de trop"))
                                 else
                                         (*Il faut transformer la declaration pour avoir un case sur la colonne de matching*)
                                         let Ast.Definition (Name(_,start_p,end_p),p_list_premier,e_premier) = List.hd definitions in
                                         let counter = ref 0 in
-                                        (decl, Ast.Definition (Name(name,start_p,end_p), List.map (fun p -> 
-                                                if !counter <> col then let _ = incr counter in p else let _ = incr counter in Ast.PatargIdent "ma_super_variable_de_filtrage") p_list_premier, {e=Case ({e=Variable ("ma_super_variable_de_filtrage");location=e_premier.location}, List.combine maped_defs (List.map (fun p -> 
-                                                        match p with Ast.Definition(_,_,e) -> e | _ -> failwith "Cas impossible") definitions)); location=e_premier.location}),ajoute_g_env_fonction name vars instances' tau_list' g_env)
+
+                                        let final_patarg_list = List.map (fun p -> 
+                                                if !counter <> col then let _ = incr counter in p else let _ = incr counter in Ast.PatargIdent "ma_super_variable_de_filtrage") p_list_premier in
+
+                                        let final_def_expr = TCase (TVariable ("ma_super_variable_de_filtrage", type_a_filtrer), List.combine maped_defs t_expr_list, type_of_texpr (List.hd t_expr_list)) in
+
+                                        (decl, TDefinition (name, final_patarg_list, final_def_expr), ajoute_g_env_fonction name vars instances' tau_list' g_env)
                                 else
                                         raise (Error (start_pos, end_pos, "Filtrage non exhaustif de la colonne "^(string_of_int col)))
                         else
                                 if List.length definitions > 1 then
                                         raise (Error (start_pos, end_pos, "La fonction "^name^" comporte au moins une définition de trop"))
                                 else
-                                        (decl, List.hd definitions, ajoute_g_env_fonction name vars instances' tau_list' g_env)
+                                        let Definition(Name(name,_,_),p_list,e) = List.hd definitions in
+                                        (decl, TDefinition (name, p_list, List.hd t_expr_list), ajoute_g_env_fonction name vars instances' tau_list' g_env)
 
         | _ -> failwith "Il devrait s'agire d'une TypeDeclaration"

@@ -154,68 +154,55 @@ let rec filtrage_exhaustif g_env l_env start_p end_p (tau, lst) =
                                                 let _ = incr col in true 
                                         else false) t_lst) constructors
                         )
-                        (*
-                         (*Sinon il faut que chacun des constructeurs apparaissent et que les colonnes des arguments soient exhaustives*)
-                        || (*On vérifie que tous les constructeurs d'arités 0 apparaissent dans la liste*) (List.length t_list = 0 && existe_g_env_data name g_env && (
-
-                                let _,_,constructeurs = trouve_g_env_data name g_env start_p end_p in
-                                let constructeurs_dans_les_patterns = List.map (fun x -> match x with
-                                                                                        | PatternArgument (PatargIdent y) -> if existe_g_env_constructor y g_env then y else "_" 
-                                                                                        | _ -> "_") l in
-                                List.for_all (fun y -> List.mem y constructeurs_dans_les_patterns) (List.map (fun (x,_) -> x) constructeurs)
-                        ))
-                        || (let candidats = ref (List.map (fun p -> match p with PatternConstructor(_,p_list) -> p_list | _ -> failwith "Cas impossible") (List.filter (fun x -> begin match  x with
-                                                                | PatternConstructor(name, p_list) -> true
-                                                                | _ -> false
-                                                                end) (List.map unpack_pattern l))) in
-                        if List.length !candidats = 0 then 
-                                false
-                        else
-                                let t_list_ref = ref t_list in
-                                let res = ref true in
-                                for i=1 to List.length t_list do
-                                        let premiers, liste_des_restes = list_of_premiers !candidats in
-                                        let premier, reste = pop_premier !t_list_ref in
-                                        t_list_ref := reste;
-                                        candidats := liste_des_restes;
-                                        if not (filtrage_exhaustif g_env l_env start_p end_p (premier, List.map (fun p -> PatternArgument p) premiers)) then
-                                                res := false;
-                                done;
-                                !res
-                        )
-                        *)
         | Tbool, l -> List.mem (PatternArgument (PatargConstant (Boolean false))) l && List.mem (PatternArgument (PatargConstant (Boolean true))) l
         | _,l -> List.exists (fun x -> match x with
                                                 | PatternArgument (PatargIdent _) -> true
                                                 | _ -> false
                                                 ) l 
 
-let rec type_expression g_env l_env = function
+let type_of_texpr = function	
+        | TConstant (_,t) -> t
+	| TVariable (_, t) -> t
+	| TTypedExpression (_,_, t) -> t
+	| TBinaryOperation (_,_,_, t) -> t
+	| TConditional (_,_,_, t) -> t
+        | TExplicitConstructor (_,_,t) -> t
+	| TFunctionCall (_,_,t) -> t 
+        | TDo _ -> Tconstr("Effect", [Tvar "Unit"]) 
+	| TLet (_,_,t) -> t
+	| TCase (_,_,t) -> t
+
+
+let rec type_expression g_env l_env expression = match expression with
         | {e=Constant c; location=(start_p,end_p)} -> 
                         begin match c with
-                        | Integer _ -> Tint
-                        | Boolean _ -> Tbool
-                        | String _ -> Tstring
+                        | Integer _ -> TConstant (c, Tint)
+                        | Boolean _ -> TConstant (c, Tbool)
+                        | String _ -> TConstant (c, Tstring)
                         end
 
         | {e=Variable x; location=(start_p,end_p)} ->
                         begin
                         try
-                                type_of_var_l_env x start_p end_p l_env
+                                TVariable (x, type_of_var_l_env x start_p end_p l_env)
                         with _ -> let res,_,_ = trouve_g_env_constructeur x g_env start_p end_p 
-                                in (Tvar res)
+                                in TVariable (x, Tvar res)
                         end
 
 	| {e=TypedExpression (exp, tau); location=(start_p,end_p)} ->
                         let tau' = bf g_env l_env tau in
-                        if type_expression g_env l_env exp = tau' then
-                                tau'
+                        let t_exp = type_expression g_env l_env exp in
+                        if type_of_texpr t_exp = tau' then
+                                TTypedExpression(t_exp, tau, tau')
                         else
                                 raise (Error (start_p, end_p, "Le type suggéré ne correspond pas\n"));
 
 	| {e=BinaryOperation (e1, binop, e2); location=(start_p,end_p)} ->
-                        let tau1 = unpack g_env l_env (type_expression g_env l_env e1) in
-                        let tau2 = unpack g_env l_env (type_expression g_env l_env e2) in
+                        let t_e1 = type_expression g_env l_env e1 in
+                        let t_e2 = type_expression g_env l_env e2 in
+                        let tau1 = unpack g_env l_env (type_of_texpr t_e1) in
+                        let tau2 = unpack g_env l_env (type_of_texpr t_e2) in
+                        let res = 
                         begin match tau1, binop, tau2 with
                         | Tint, Plus, Tint | Tint, Minus, Tint | Tint, Times, Tint | Tint, Divide, Tint -> Tint 
                         | Tint, Equal, Tint | Tint, NotEqual, Tint | Tint, LessThan, Tint | Tint, LessThanOrEqual, Tint | Tint, GreaterThan, Tint | Tint, GreaterThanOrEqual, Tint -> Tbool 
@@ -224,58 +211,69 @@ let rec type_expression g_env l_env = function
                         | Tstring, Concatenate, Tstring -> Tstring
                         | _,_,_ -> raise (Error (start_p, end_p, "Opérandes invalide pour cette opération binaire"))
                         end
+                        in TBinaryOperation(t_e1,binop,t_e2,res)
 
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
+                        let t_e1 = type_expression g_env l_env e1 in
                         let sub = ref [] in
-                        unifie_sub sub (start_p,end_p) (type_expression g_env l_env e1, Tbool);
-                        let tau = type_expression g_env l_env e2 in
-                        unifie_sub sub (start_p,end_p) (type_expression g_env l_env e3, tau);
-                        tau
+                        unifie_sub sub (start_p,end_p) (type_of_texpr t_e1, Tbool);
+                        let t_e2 = type_expression g_env l_env e2 in
+                        let t_e3 = type_expression g_env l_env e3 in
+                        unifie_sub sub (start_p,end_p) (type_of_texpr t_e3, type_of_texpr t_e2);
+                        TConditional (t_e1, t_e2, t_e3, type_of_texpr t_e2)
 
         | {e=Do e_list; location=(start_p,end_p)} ->
+                        let t_e_list = List.map (type_expression g_env l_env) e_list in
                         let sub = ref [] in
-                        List.iter (fun exp -> 
-                                unifie_sub sub (start_p, end_p) (type_expression g_env l_env exp, Teffect Tunit)
-                        ) e_list;
-                        Teffect Tunit
+                        List.iter (fun expr -> 
+                                unifie_sub sub (start_p, end_p) (type_of_texpr expr, Teffect Tunit)
+                        ) t_e_list;
+                        TDo t_e_list
 
 	| {e=Let (assoc_list, exp); location=(start_p,end_p)} ->
                         let l_env' = ref l_env in
-                        List.iter (fun (x_i,e_i) -> 
+                        let assoc_list' = List.map (fun (x_i,e_i) -> 
                                 existe_g_env x_i g_env start_p end_p;
-                                let tau_i = type_expression g_env !l_env' e_i in
-                                l_env' := ajoute_l_env_assoc x_i tau_i !l_env') assoc_list;
-                        type_expression g_env !l_env' exp
+                                let t_e_i = type_expression g_env !l_env' e_i in
+                                let tau_i = type_of_texpr t_e_i in
+                                l_env' := ajoute_l_env_assoc x_i tau_i !l_env';
+                                (x_i,t_e_i)) assoc_list in
+                        let res = type_expression g_env !l_env' exp in 
+                        TLet (assoc_list', res, type_of_texpr res) 
 
         | {e=ExplicitConstructor (x, e_list); location=(start_p,end_p)} ->
                         let data_name, vars, tau_list = trouve_g_env_constructeur x g_env start_p end_p in
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
-                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments")));
+                        let t_e_list = List.map (fun (e_i,tau_i) -> let t_e_i = type_expression g_env l_env e_i in unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau_i); t_e_i) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments"))) in
 
-                        Tconstr (data_name, substitution !sigma vars)
-
+                        TExplicitConstructor(x,t_e_list, Tconstr (data_name, substitution !sigma vars)
+)
+                        
 	| {e=FunctionCall (f, e_list); location=(start_p,end_p)} ->
                         let f,vars, instances, tau_list = trouve_g_env_fonction f g_env start_p end_p in
                         let tau_list, ret_type = pop_dernier tau_list in
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
-                        List.iter (fun (e_i,tau_i) -> unifie_sub sigma e_i.location ((type_expression g_env l_env e_i), tau_i)) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !")));
-                        (*print_string "\nOn est à la ligne";
-                        print_int (end_p.pos_lnum);*)
+                        let t_e_list = List.map (fun (e_i,tau_i) -> let t_e_i = type_expression g_env l_env e_i in unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau_i); t_e_i) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !"))) in
+                        (*Peut-être appliquer la substitution aux variables des instances avant d'essayer de les résoudre*)
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
-                        substitution_type !sigma ret_type
+                        TFunctionCall(f, t_e_list, substitution_type !sigma ret_type)
 
 	| {e=Case (exp, case_list); location=(start_p,end_p)} ->
-                        let tau = type_expression g_env l_env exp in
+                        let t_exp = type_expression g_env l_env exp in
+                        let tau = type_of_texpr t_exp in
                         let p_1,e_1 = List.hd case_list in
-                        let tau' = type_expression g_env (etend_l_env l_env p_1) e_1 in
-                        List.iter (fun (p_i,e_i) ->
+                        let t_exp' = type_expression g_env (etend_l_env l_env p_1) e_1 in
+                        let tau' = type_of_texpr t_exp' in
+                        let t_case_list = List.map (fun (p_i,e_i) ->
                                 let sigma = ref [] in
                                 sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                                 unifie_sub sigma e_i.location (type_motif g_env l_env start_p end_p p_1, tau);
-                                unifie_sub sigma e_i.location (type_expression g_env (etend_l_env l_env p_i) e_i, tau')) case_list;
+                                let t_e_i = type_expression g_env (etend_l_env l_env p_i) e_i in
+                                unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau');
+                                (p_i,t_e_i)) case_list in
                                 if filtrage_exhaustif g_env l_env start_p end_p (tau, List.map (fun (p_i,_) -> p_i) case_list) then
-                                        tau'
+                                        TCase (t_exp, t_case_list, tau')
                                 else
                                         raise (Error (start_p, end_p, "filtrage non exhaustif"))

@@ -53,7 +53,7 @@ let declaration_d_instance g_env = function
                         let i,instances = pop_premier typed_instances in
                         let l_env = List.fold_left (fun e i' -> ajoute_l_env_instance i' e) l_env instances in
                         List.iter (fun p -> match p with Ast.Definition ((Name (f,start_p,end_p)),pat_l, e) as d -> 
-                        def_conforme g_env l_env start_p end_p d (trouve_fun start_p end_p f funs) | _ -> failwith "Cas impossible") decl_list;
+                                let _ = def_conforme g_env l_env start_p end_p d (trouve_fun start_p end_p f funs) in () | _ -> failwith "Cas impossible") decl_list;
                         (*TODO* vérifier qu'il n'y a pas plusieurs instances unifiables*)
                         (**)
                         begin

@@ -13,15 +13,29 @@ type typ =
 	| Teffect of typ
         | Tconstr of tconstr
 
+
 and tconstr = string * typ list
 
-type tvar = string
-        (*
-	{ 
-		id : int; 
-		mutable def : typ option; 
-	}
-*)
+and t_expr = 
+	| TConstant of constant * typ
+	| TVariable of ident * typ
+	| TTypedExpression of t_expr * typed * typ
+	| TBinaryOperation of t_expr * binaryOperation * t_expr * typ
+	| TConditional of t_expr * t_expr * t_expr * typ
+        | TExplicitConstructor of ident * t_expr list * typ
+	| TFunctionCall of ident * t_expr list * typ
+	| TDo of t_expr list
+	| TLet of (ident * t_expr) list * t_expr * typ
+	| TCase of t_expr * (pattern * t_expr) list * typ
+
+type t_def =
+        | TDefinition of string * patarg list * t_expr
+  (* Type declaration *)
+        | NoDecl (*Type ajouté pour pouvoir renvoyer des couples de déclarations, après le typage, ce qui ne sert que pour joindre une déclaration de fonction à son unique définition une fois la pattern matching remplacé par un case*)
+
+
+
+type tfile = TFile of (decl * t_def) list
 
 type tdectype = string * typ
 type tdecdata = string * string list * tconstr list
@@ -49,18 +63,6 @@ let init_g_env = {types = [("Unit",Tunit);("Boolean",Tbool);("Int",Tint);("Strin
                                 instances = [("Show", [Tbool]);("Show", [Tint])];
                                 schemas = []
         }
-(*
-module V = struct
-  type t = tvar
-  let compare v1 v2 = Stdlib.compare v1.id v2.id
-  let equal v1 v2 = v1.id = v2.id
-  let create = let r = ref 0 in fun () -> incr r; { id = !r; def = None }
-end
-
-module Vset = Set.Make(V)
-module Smap = Map.Make(String)
-module Vmap = Map.Make(V)
-*)
 
 
 (*type env = { instances : tinstance list; bindings : schema Smap.t; fvars : Vset.t }*)

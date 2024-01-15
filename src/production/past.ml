@@ -17,7 +17,7 @@ type p_expr =
     | PLet of (int * p_expr) list * p_expr * typ
     | PCase of p_expr * (pattern * p_expr) list * typ
 
-type p_def = PDefinition of ident * patarg list * p_expr * typ
+type p_def = PDefinition of ident * patarg list * p_expr
 
 type p_decl =
     | PTypeDeclaration of ident * typ list * typ list * typ list * p_def
