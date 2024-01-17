@@ -49,8 +49,9 @@ let rec alloc_expr (env: local_env) (fpcur: int) = function
 	| TCase (e, p_i_e_i_list, t) -> PCase (e, p_i_e_i_list, t), fpcur (*TODO*)
 
 let alloc_stmt = function
+        | TDefinition(name,p_list, e) -> nop (*TODO*)
         | TypeDeclaration (Name(name,start_p,end_p),
-                        vars,instances,tau_list), TDefinition(_,p_list, e) -> nop (*TODO*)
+                        vars,instances,tau_list) -> nop (*TODO*)
         | Data (ident, vars, constructors), NoDecl -> nop (*TODO*)
         | Class (ident, vars, decls), NoDecl -> nop (*TODO*)
         | Instance (tau_list, decls), NoDecl -> nop (*TODO*)
