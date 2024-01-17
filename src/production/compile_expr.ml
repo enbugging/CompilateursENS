@@ -32,122 +32,156 @@ let find_type = function
     | PCase (_,_,t) -> t
     | PDo _ -> Tunit
 
-let rec compile_constant = function
+let rec compile_constant env (code, data) = function
     | PConstant (Boolean b,_) -> 
-        pushq (imm (if b then 1 else 0)) 
+        let code = code ++
+            pushq (imm (if b then 1 else 0)) 
+        in (code, data)
     | PConstant (Integer i,_) -> 
-        pushq (imm i)
+        let code = code ++ 
+            pushq (imm i)
+        in (code, data)
     | PConstant (String s,_) -> 
-        pushq (lab s)
+        let label = unique_label ~isUnique:true "string" in
+        let data = data ++ 
+            label ++ 
+            string s ++
+            null in 
+        let code = code ++ 
+            pushq (lab label) 
+        in (code, data)
     | PVariable x -> 
-        (* Not sure if this is right *)
-        movq (ind ~ofs:x rbp) !%rax ++ 
-        pushq !%rax
+        let code = code ++ 
+            (* Not sure if this is right *)
+            movq (ind ~ofs:x rbp) !%rax ++ 
+            pushq !%rax
+        in (code, data)
     | PTypedExpression (e,t) -> 
-        compile_expr e
+        let code = code ++ 
+            compile_constant env (code, data) e
+        in (code, data)
     | _ -> raise (Bad_type ("compile_constant", find_type e))
 
-and compile_binop = function
+and compile_binop env (code, data) = function
     | PBinaryOperation (e1, (Plus | Minus | Times | Divide) as binop, e2, t) -> 
-        compile_expr e1 ++ 
-        compile_expr e2 ++
-        popq rbx ++ popq rax ++
-        (match binop with
-        | Plus -> addq !%rbx !%rax
-        | Minus -> subq !%rbx !%rax
-        | Times -> imulq !%rbx !%rax
-        | Divide -> cqto ++ idivq !%rbx ) ++ 
-        pushq!%rax
+        let (code, data) = compile_expr env (code, data) e1 in 
+        let (code, data) = compile_expr env (code, data) e2 in
+        let code = code ++
+            popq rbx ++ popq rax ++
+            (match binop with
+            | Plus -> addq !%rbx !%rax
+            | Minus -> subq !%rbx !%rax
+            | Times -> imulq !%rbx !%rax
+            | Divide -> cqto ++ idivq !%rbx ) ++ 
+            pushq!%rax
+        in (code, data)
     | PBinaryOperation(e1, Modulo, e2,t) -> 
-        compile_expr e1 ++
-        compile_expr e2 ++
-        popq rbx ++ popq rax ++
-        cqto ++ idivq !%rbx ++
-        push !%rdx
+        let (code, data) = compile_expr env (code, data) e1 in 
+        let (code, data) = compile_expr env (code, data) e2 in
+        let code = code ++
+            popq rbx ++ popq rax ++
+            cqto ++ idivq !%rbx ++
+            push !%rdx
+        in (code, data)
     (* Comparison operations *)
     | PBinaryOperation (e1, (Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual) as binop, e2, t) ->
-        compile_expr e1 ++
-        compile_expr e2 ++
-        popq rbx ++ popq rax ++
-        match find_type e1 with
-        | Tint | Tbool -> 
-            cmpq !%rbx !%rax ++
-            (match binop with
-            | Equal -> sete !%al
-            | NotEqual -> setne !%al
-            | Less -> setl !%al
-            | LessEqual -> setle !%al
-            | Greater -> setg !%al
-            | GreaterEqual -> setge !%al) ++
-            movzbq !%al !%rax ++
-            pushq !%rax
-        | Tstring ->
-            movq !%rax !%rdi ++ 
-            movq !%rbx !%rsi ++
-            call "strcmp" ++
-            (match binop with
-            | Equal -> sete !%al
-            | NotEqual -> setne !%al
-            | Less -> setl !%al
-            | LessEqual -> setle !%al
-            | Greater -> setg !%al
-            | GreaterEqual -> setge !%al) ++
-            movzbq !%al !%rax ++
-            pushq !%rax
-        | _  as t -> raise (Bad_type ("Comparison operations", t))
+        let (code, data) = compile_expr env (code, data) e1 in 
+        let (code, data) = compile_expr env (code, data) e2 in
+        let code = code ++
+            popq rbx ++ popq rax ++
+            match find_type e1 with
+            | Tint | Tbool -> 
+                cmpq !%rbx !%rax ++
+                (match binop with
+                | Equal -> sete !%al
+                | NotEqual -> setne !%al
+                | Less -> setl !%al
+                | LessEqual -> setle !%al
+                | Greater -> setg !%al
+                | GreaterEqual -> setge !%al) ++
+                movzbq !%al !%rax ++
+                pushq !%rax
+            | Tstring ->
+                movq !%rax !%rdi ++ 
+                movq !%rbx !%rsi ++
+                call "strcmp" ++
+                (match binop with
+                | Equal -> sete !%al
+                | NotEqual -> setne !%al
+                | Less -> setl !%al
+                | LessEqual -> setle !%al
+                | Greater -> setg !%al
+                | GreaterEqual -> setge !%al) ++
+                movzbq !%al !%rax ++
+                pushq !%rax
+            | _  as t -> raise (Bad_type ("Comparison operations", t))
+        in (code, data)
     | _ as e -> raise (Bad_type ("Binary operation", find_type e))
 
-and compile_function_call = function 
+and compile_function_call env (code, data) = function 
     | PFunctionCall ("log",[e],t) ->
         match t with 
         | Tstring -> 
-            compile_expr e ++
-            call "log" ++ 
-            pushq !%rax ++
-            ret 
+            let (code, data) = compile_expr env (code, data) e in 
+            let code = code ++ 
+                call "log" ++ 
+                pushq !%rax ++
+                ret 
+            in (code, data)
         | _ as t -> raise (Bad_type ("Function call : log", t))
     | PFunctionCall ("Show",[e],t) -> 
         match t with
         | Tbool ->
-            compile_expr e ++
-            call "show_bool" ++
-            pushq !%rax ++
-            ret
+            let (code, data) = compile_expr env (code, data) e in
+            let code = code ++
+                call "show_bool" ++
+                pushq !%rax ++
+                ret
+            in (code, data)
         | Tint ->
-            compile_expr e ++
-            call "show_int" ++
-            pushq !%rax ++
-            ret
+            let (code, data) = compile_expr env (code, data) e in
+            let code = code ++
+                call "show_int" ++
+                pushq !%rax ++
+                ret
+            in (code, data)
         | Tstring ->
-            compile_expr e
+            compile_expr env (code, data) e
         | _ as t -> raise (Bad_type ("Function call : Show", t))
     | PFunctionCall (f, args, t) ->
-        List.fold_right (fun e code -> compile_expr e ++ code) args nop ++
-        call f ++
-        pushq !%rax
+        let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env (code, data) e) (code, data) args in
+        let code = code ++
+            call f ++
+            pushq !%rax ++
+            ret
+        in (code, data)
     | _ as e -> raise (Bad_type ("Function call", find_type e))
 
 and compile_conditional = function
     | PConditional (e1, e2, e3, t) ->
         let label_else = unique_label ~isUnique:true "else" in
         let label_end = unique_label ~isUnique:true "end" in
-        compile_expr e1 ++ 
-        popq rax ++
-        cmpq (imm 0) !%rax ++
-        je label_else ++
-        compile_expr e2 ++
-        jmp label_end ++
-        label label_else ++
-        compile_expr e3 ++
-        label label_end
+        let (code, data) = compile_expr env (code, data) e1 in
+        let code = code ++
+            popq rax ++
+            cmpq (imm 0) !%rax ++
+            je label_else in 
+        let (code, data) = compile_expr env (code, data) e2 in
+        let code = code ++
+            jmp label_end ++
+            label label_else in
+        let (code, data) = compile_expr env (code, data) e3 in
+        let code = code ++
+            label label_end
+        in (code, data)
     | _ as e -> raise (Bad_type ("Conditional", find_type e))
 
-and compile_expr = function
-    | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant e
-    | PBinaryOperation _ as e -> compile_binop e  
-    | PFunctionCall _ as e -> compile_function_call e    
-    | PConditional _ as e -> compile_conditional e
-    | PDo l -> List.fold_right (fun e code -> compile_expr e ++ code) l nop
+and compile_expr env (code, data) = function
+    | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env (code, data) e
+    | PBinaryOperation _ as e -> compile_binop env (code, data) e  
+    | PFunctionCall _ as e -> compile_function_call env (code, data) e    
+    | PConditional _ as e -> compile_conditional env (code, data) e
+    | PDo l -> List.fold_left (fun (code, data) e -> compile_expr env (code, data) e) (code, data) l
     | PLet (l,e,t) -> raise (Todo "Let")
     | PCase (e,l,t) -> raise (Todo "Case")
     | PExplicitConstructor (i,el,t) -> raise (Todo "Explicit constructor")
