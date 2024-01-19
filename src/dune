@@ -1,6 +1,6 @@
 (executable
  (name ppurs)
- (libraries typing preprocessing)
+ (libraries typing preprocessing production)
  (promote (until-clean))
  (flags ())
 )

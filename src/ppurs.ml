@@ -4,16 +4,21 @@ open Format
 open Lexing
 open Preprocessing
 open Typing
+open Production
 
 let usage = "usage: ppurs [options] file.purs"
 
 let parse_only = ref false
 let type_only = ref false
 
+let set_file f s = f := s
+let ofile = ref "" (* output file name *)
+
 let spec =
 	[
 		"--parse-only", Arg.Set parse_only, "  stop after parsing";
 		"--type-only", Arg.Set type_only, "  stop after typing";
+    "-o", Arg.String (set_file ofile), "  set output file name";
 	]
 
 let file =
@@ -42,9 +47,12 @@ let () =
 		if !parse_only then exit 0;
 
 		(* Typing *)
-                let t = Typer.type_file f in
+    let t = Typer.type_file f in
 		if !type_only then exit 0;
 
+    (* Production *)
+    if !ofile = "" then ofile := Filename.chop_suffix file ".purs" ^ ".s";
+    Production.compile_program t !ofile
 	with
 		| Lexer.Illegal_character s ->
 			report (lexeme_start_p lb, lexeme_end_p lb);
