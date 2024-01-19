@@ -1,13 +1,16 @@
 open Past
 open Alloc
 open Compile_expr
+open Utils
 
 let env = int Smap.t
 
 let rec compile_stmt (code, data) statement = 
   match statement with
-  | PTypeDeclaration (_, _, _, _, def) -> 
+  | PTypeDeclaration (_, _, _, list_of_types_of_args, def) -> 
+    let hash_of_types_of_args = hash_of_list_of_types list_of_types_of_args in 
     let PDefinition (label, _, expr) = def in 
+    let new_label = label + hash_of_types_of_args in
     compile_expr env (code, data) expr
   | PData _ -> () (* TODO *)
   | PClass _ -> () 

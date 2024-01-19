@@ -1,3 +1,19 @@
+open Typing.Tast
+
+(* Hash of list typ, return a string *)
+let rec hash_of_type t = 
+    match t with 
+    | Tint -> "int"
+    | Tbool -> "bool"
+    | Tstring -> "string"
+    | Tunit -> "unit"
+    | Tvar v -> "var" + v
+    | QuantifTvar v -> "quantifTvar" + v
+    | Teffect t -> "effect_l_" + hash_of_type t + "_r"
+    | Tconst (s, types) -> let hash_ts = hast_of_list types in "const_l_" + s + "_r_" + hash_ts
+
+and hash_of_list_of_types types = List.fold_left (fun acc t -> acc + "_l_" + hash_of_type t + "_r") "" ts
+
 (* Labels *)
 
 let label_counter = ref 0
