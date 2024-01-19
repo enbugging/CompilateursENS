@@ -167,7 +167,7 @@ let type_of_texpr = function
 	| TBinaryOperation (_,_,_, t) -> t
 	| TConditional (_,_,_, t) -> t
         | TExplicitConstructor (_,_,t) -> t
-	| TFunctionCall (_,_,t) -> t 
+	| TFunctionCall (_,_,_,t) -> t 
         | TDo _ -> Tconstr("Effect", [Tvar "Unit"]) 
 	| TLet (_,_,t) -> t
 	| TCase (_,_,t) -> t
@@ -258,7 +258,7 @@ let rec type_expression g_env l_env expression = match expression with
                         let t_e_list = List.map (fun (e_i,tau_i) -> let t_e_i = type_expression g_env l_env e_i in unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau_i); t_e_i) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !"))) in
                         (*Peut-être appliquer la substitution aux variables des instances avant d'essayer de les résoudre*)
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
-                        TFunctionCall(f, t_e_list, substitution_type !sigma ret_type)
+                        TFunctionCall(f, instances, t_e_list, substitution_type !sigma ret_type)
 
 	| {e=Case (exp, case_list); location=(start_p,end_p)} ->
                         let t_exp = type_expression g_env l_env exp in

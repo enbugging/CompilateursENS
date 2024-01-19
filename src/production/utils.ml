@@ -1,4 +1,5 @@
 open Typing.Tast
+open X86_64
 
 (* Hash of list typ, return a string *)
 let rec hash_of_type t = 
@@ -7,12 +8,12 @@ let rec hash_of_type t =
     | Tbool -> "bool"
     | Tstring -> "string"
     | Tunit -> "unit"
-    | Tvar v -> "var" + v
-    | QuantifTvar v -> "quantifTvar" + v
-    | Teffect t -> "effect_l_" + hash_of_type t + "_r"
-    | Tconst (s, types) -> let hash_ts = hast_of_list types in "const_l_" + s + "_r_" + hash_ts
+    | Tvar v -> "var" ^ v
+    | QuantifTvar v -> "quantifTvar" ^ v
+    | Teffect t -> "effect_l_" ^ hash_of_type t ^ "_r"
+    | Tconstr (s, types) -> let hash_ts = hash_of_list_of_types types in "const_l_" ^ s ^ "_r_" ^ hash_ts
 
-and hash_of_list_of_types types = List.fold_left (fun acc t -> acc + "_l_" + hash_of_type t + "_r") "" ts
+and hash_of_list_of_types types = List.fold_left (fun acc t -> acc ^ "_l_" ^ hash_of_type t ^ "_r") "" types
 
 (* Labels *)
 
@@ -20,9 +21,9 @@ let label_counter = ref 0
 let label_table = Hashtbl.create 100
 
 (* Modify a label if we need it to be unique, by set isUnique = true *)
-let unique_label ?(isUnique : false) label = 
+let unique_label ?(isUnique = false) label = 
     if not isUnique then 
-        let _ = Hashtbl.add label_table label in
+        let _ = Hashtbl.add label_table label 
         in label
     else 
         begin

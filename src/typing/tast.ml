@@ -16,6 +16,14 @@ type typ =
 
 and tconstr = string * typ list
 
+type tdectype = string * typ
+type tdecdata = string * string list * tconstr list
+type tinstance = string * typ list
+type tinstance_schema = tinstance list * tinstance
+type tdecfun = string * string list * tinstance list * typ list
+type tdecclass = string * string list * tdecfun list
+
+
 and t_expr = 
 	| TConstant of constant * typ
 	| TVariable of ident * typ
@@ -23,7 +31,7 @@ and t_expr =
 	| TBinaryOperation of t_expr * binaryOperation * t_expr * typ
 	| TConditional of t_expr * t_expr * t_expr * typ
         | TExplicitConstructor of ident * t_expr list * typ
-	| TFunctionCall of ident * t_expr list * typ
+	| TFunctionCall of ident * tinstance list * t_expr list * typ
 	| TDo of t_expr list
 	| TLet of (ident * t_expr) list * t_expr * typ
 	| TCase of t_expr * (pattern * t_expr) list * typ
@@ -36,14 +44,6 @@ type t_def =
 
 
 type tfile = TFile of (decl * t_def) list
-
-type tdectype = string * typ
-type tdecdata = string * string list * tconstr list
-type tinstance = string * typ list
-type tinstance_schema = tinstance list * tinstance
-type tdecfun = string * string list * tinstance list * typ list
-type tdecclass = string * string list * tdecfun list
-
 type global_environment = {types : tdectype list;
                                 datas : tdecdata list;
                                 fonctions : tdecfun list;
