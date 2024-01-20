@@ -120,9 +120,7 @@ and compile_function_call env label_counter label_table (code, data) = function
     | PFunctionCall ("log",_,[e],t) ->
         let (code, data) = compile_expr env label_counter label_table  (code, data) e in 
         let code = code ++ 
-            call "log" ++ 
-            pushq !%rax ++
-            ret 
+            call "log" 
         in (code, data)
     | PFunctionCall ("show",_,[e],t) -> 
         begin match find_type e with
@@ -130,15 +128,13 @@ and compile_function_call env label_counter label_table (code, data) = function
             let (code, data) = compile_expr env label_counter label_table (code, data) e in
             let code = code ++
                 call "show_bool" ++
-                pushq !%rax ++
-                ret
+                pushq !%rax
             in (code, data)
         | Tint ->
             let (code, data) = compile_expr env label_counter label_table (code, data) e in
             let code = code ++
-                call "show_int" ++
-                pushq !%rax ++
-                ret
+                call "show_int" ++ 
+                pushq !%rax
             in (code, data)
         | Tstring ->
             compile_expr env label_counter label_table (code, data) e
@@ -148,8 +144,8 @@ and compile_function_call env label_counter label_table (code, data) = function
         let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) args in
         let code = code ++
             call f ++
-            pushq !%rax ++
-            ret
+            pushq !%rax
+    (* TODO: remove arguments from stacks *)
         in (code, data)
     | e -> raise (Bad_type ("Function call", find_type e))
   

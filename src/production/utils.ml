@@ -42,7 +42,9 @@ let log_code env (text, data) label_counter label_table =
 	in
 	let text = text ++
 		label log ++
-		popq rsi ++ (* Move the pointer to rsi *)
+		popq rax ++ (* Pop the return address to the string to rax *)
+		popq rsi ++ (* Move the pointer to the string to rsi *)
+		pushq !%rax ++ (* Push the return address back to the stack *)
 		movq (ilab string_format) !%rdi ++ (* Move the address of the string to rdi *)
 		xorq !%rax !%rax ++ (* Set rax to 0 *)
 		call "printf" ++ (* Call printf *)
@@ -62,14 +64,21 @@ let show_int_code env (text, data) label_counter label_table =
 	in 
 	let text = text ++
 		label show_int ++ 
-		movq (ind ~ofs:8 rsi) !%r15 ++ (* Move value to r15 *)
+		popq rax ++ (* Pop the return address to the int to rax *)
+		popq r15 ++ (* Move the int to r15 *)
+		pushq !%rax ++ (* Push the return address back to the stack *)
+
+		(* Allocate 20 bytes for the string *)
 		movq (imm 20) !%rdi ++ (* Move 20 to rdi *)
 		call "malloc" ++ (* Allocate 20 bytes for the string *)
-		movq !%r15 !%rdi ++ (* Move value back to rdi *)
 
-		movq (ilab show_int_format) !%rsi ++ (* Move the address of the string to rsi *)
+		movq !%r15 !%rdx ++ (* Move value back to rdi *)
+		movq (ilab show_int_format) !%rsi ++ (* Move the address of the format string to rsi *)
+		movq !%rax !%rdi ++ (* Move the address of the buffer (i.e., the result string) to rdi *)
+		movq !%rax !%r15 ++ (* Move the address of the buffer to r15 *)
 		xorq !%rax !%rax ++ (* Set rax to 0 *)
 		call "sprintf" ++ 
+		movq !%r15 !%rax ++ (* Move the address of the buffer to rax *)
 		ret
 	in (text, data)
 		
@@ -89,10 +98,10 @@ let show_bool_code env (text, data) label_counter label_table =
 	false:
 		.string "false" *)
 	let data = data ++
-	label true_label ++ 
-	string "true" ++ 
-	label false_label ++
-	string "false"
+		label true_label ++ 
+		string "true" ++ 
+		label false_label ++
+		string "false"
 	in 
 	(* Add code to check if the bool is true or false, and jump to the corresponding label 
 		.text
@@ -106,13 +115,17 @@ let show_bool_code env (text, data) label_counter label_table =
 		mov $(true), rax
 		ret*)
 	let text = text ++ 
-	label show_bool ++ 
-	  testq !%rax !%rax ++ (* Test if rax is true *)
-	je show_true ++ 
-	movq (ilab false_label) !%rax ++ (* Load the address of false_label if rax is false *)
-	ret ++
+		label show_bool ++ 
+		popq rax ++ (* Pop the return address to the bool to rax *)
+		popq rdi ++ (* Move the bool to rdi *)
+		pushq !%rax ++ (* Push the return address back to the stack *)
 
-	label show_true ++ (* Label to jump to when rax is true*)
-	movq (ilab true_label) !%rax ++ (* Load the address of true_label if rax is true *)
-	ret
+		testq !%rdi !%rdi ++ (* Test if rax is true *)
+		jne show_true ++ 
+		movq (ilab false_label) !%rax ++ (* Push the address of false_label if rax is false *)
+		ret ++
+
+		label show_true ++ (* Label to jump to when rax is true*)
+		movq (ilab true_label) !%rax ++ (* Push the address of true_label if rax is true *)
+		ret
 	in (text, data)
