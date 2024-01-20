@@ -31,7 +31,7 @@ show_true:
 	cqto
 	idivq %rbx
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -54,7 +54,7 @@ show_true:
 	cqto
 	idivq %rbx
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -72,7 +72,7 @@ show_true:
 	cqto
 	idivq %rbx
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -90,7 +90,7 @@ show_true:
 	cqto
 	idivq %rbx
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log

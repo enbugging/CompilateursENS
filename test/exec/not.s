@@ -24,7 +24,7 @@ show_true:
 	call not
 	pushq %rax
 	ret
-	call show
+	call show_bool
 	pushq %rax
 	ret
 	call log
@@ -34,7 +34,7 @@ show_true:
 	call not
 	pushq %rax
 	ret
-	call show
+	call show_bool
 	pushq %rax
 	ret
 	call log

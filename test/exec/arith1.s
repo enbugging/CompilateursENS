@@ -31,7 +31,7 @@ show_true:
 	popq %rax
 	subq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -48,7 +48,7 @@ show_true:
 	popq %rax
 	subq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -64,7 +64,7 @@ show_true:
 	popq %rax
 	addq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -80,7 +80,7 @@ show_true:
 	popq %rax
 	addq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -99,7 +99,7 @@ show_true:
 	cqto
 	idivq %rbx
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -116,7 +116,7 @@ show_true:
 	popq %rax
 	imulq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -129,7 +129,7 @@ show_true:
 	cqto
 	idivq %rbx
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -146,7 +146,7 @@ show_true:
 	popq %rax
 	addq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -158,7 +158,7 @@ show_true:
 	popq %rax
 	addq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -170,7 +170,7 @@ show_true:
 	popq %rax
 	subq %rbx, %rax
 	pushq %rax
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log

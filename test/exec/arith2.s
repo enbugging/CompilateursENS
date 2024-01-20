@@ -29,7 +29,7 @@ show_true:
 	call mod
 	pushq %rax
 	ret
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -50,7 +50,7 @@ show_true:
 	call mod
 	pushq %rax
 	ret
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -66,7 +66,7 @@ show_true:
 	call mod
 	pushq %rax
 	ret
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
@@ -82,7 +82,7 @@ show_true:
 	call mod
 	pushq %rax
 	ret
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log

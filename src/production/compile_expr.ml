@@ -124,7 +124,7 @@ and compile_function_call env (code, data) = function
             pushq !%rax ++
             ret 
         in (code, data)
-    | PFunctionCall ("Show",_,[e],t) -> 
+    | PFunctionCall ("show",_,[e],t) -> 
         begin match find_type e with
         | Tbool ->
             let (code, data) = compile_expr env (code, data) e in

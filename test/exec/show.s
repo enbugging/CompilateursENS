@@ -21,14 +21,14 @@ show_true:
 	movq $true, %rax
 	ret
 	pushq $1
-	call show
+	call show_bool
 	pushq %rax
 	ret
 	call log
 	pushq %rax
 	ret
 	pushq $42
-	call show
+	call show_int
 	pushq %rax
 	ret
 	call log
