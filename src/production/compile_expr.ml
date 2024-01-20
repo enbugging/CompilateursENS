@@ -58,7 +58,7 @@ let rec compile_constant env label_counter label_table (code, data) = function
         in (code, data)
     | PTypedExpression (e,t) -> 
         compile_constant env label_counter label_table (code, data) e
-    | _ as e -> raise (Bad_type ("compile_constant", find_type e))
+    | e -> raise (Bad_type ("compile_constant", find_type e))
 
 and compile_binop env label_counter label_table (code, data) = function
         | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times ; Divide])-> 
@@ -112,9 +112,9 @@ and compile_binop env label_counter label_table (code, data) = function
                 | GreaterThanOrEqual -> setge !%al) ++
                 movzbq !%al rax ++
                 pushq !%rax
-            | _  as t -> raise (Bad_type ("Comparison operations", t))
+            | t -> raise (Bad_type ("Comparison operations", t))
         in (code, data)
-    | _ as e -> raise (Bad_type ("Binary operation", find_type e))
+    | e -> raise (Bad_type ("Binary operation", find_type e))
 
 and compile_function_call env label_counter label_table (code, data) = function 
     | PFunctionCall ("log",_,[e],t) ->
@@ -142,7 +142,7 @@ and compile_function_call env label_counter label_table (code, data) = function
             in (code, data)
         | Tstring ->
             compile_expr env label_counter label_table (code, data) e
-        | _ as t -> raise (Bad_type ("Function call : Show", t))
+        | t -> raise (Bad_type ("Function call : Show", t))
         end
     | PFunctionCall (f, _, args, t) ->
         let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) args in
@@ -151,7 +151,7 @@ and compile_function_call env label_counter label_table (code, data) = function
             pushq !%rax ++
             ret
         in (code, data)
-    | _ as e -> raise (Bad_type ("Function call", find_type e))
+    | e -> raise (Bad_type ("Function call", find_type e))
   
 and compile_conditional env label_counter label_table (code, data) e = 
     match e with
@@ -171,7 +171,7 @@ and compile_conditional env label_counter label_table (code, data) e =
         let code = code ++
             label label_end
         in (code, data)
-    | _ as e -> raise (Bad_type ("Conditional", find_type e))
+    | e -> raise (Bad_type ("Conditional", find_type e))
 
 and compile_expr env label_counter label_table (code, data) = function
     | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env label_counter label_table (code, data) e
