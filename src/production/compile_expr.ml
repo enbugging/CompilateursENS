@@ -118,18 +118,14 @@ and compile_binop env (code, data) = function
 
 and compile_function_call env (code, data) = function 
     | PFunctionCall ("log",_,[e],t) ->
-        begin match t with 
-        | Tstring -> 
-            let (code, data) = compile_expr env (code, data) e in 
-            let code = code ++ 
-                call "log" ++ 
-                pushq !%rax ++
-                ret 
-            in (code, data)
-        | _ as t -> raise (Bad_type ("Function call : log", t))
-        end
+        let (code, data) = compile_expr env (code, data) e in 
+        let code = code ++ 
+            call "log" ++ 
+            pushq !%rax ++
+            ret 
+        in (code, data)
     | PFunctionCall ("Show",_,[e],t) -> 
-        begin match t with
+        begin match find_type e with
         | Tbool ->
             let (code, data) = compile_expr env (code, data) e in
             let code = code ++
