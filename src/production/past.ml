@@ -7,7 +7,7 @@ type p_const = constant
 
 type p_expr = 
     | PConstant of p_const*typ
-    | PVariable of int (*décalage par rapport à bp*)
+    | PVariable of int * typ (*décalage par rapport à bp*)
     | PTypedExpression of p_expr * typ
     | PBinaryOperation of p_expr * binaryOperation * p_expr * typ
     | PConditional of p_expr * p_expr * p_expr * typ

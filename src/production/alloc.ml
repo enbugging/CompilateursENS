@@ -19,7 +19,7 @@ type local_env = int Smap.t
 let rec alloc_expr (env: local_env) (fpcur: int) = function
         | TConstant (c, t) -> PConstant (c,t), fpcur
 	| TVariable (x, t) -> begin match Smap.find_opt x env with
-                                | Some(dec) -> PVariable dec, fpcur
+                                | Some(dec) -> PVariable (dec, t), fpcur
                                 | None -> raise (VarUndef x)
                                 end
 

@@ -20,14 +20,14 @@ exception Bad_type of string * typ
 exception Todo of string
 
 (* type *)
-let find_type = function
+let rec find_type = function
     | PConstant (_,t) -> t
-    | PVariable (_,t) -> t
+    | PVariable (_, t) -> t
     | PTypedExpression (_,t) -> t
     | PBinaryOperation (_,_,_,t) -> t
     | PConditional (_,_,_,t) -> t
     | PExplicitConstructor (_,_,t) -> t
-    | PFunctionCall (_,_,t) -> t
+    | PFunctionCall (_,_,_,t) -> t
     | PLet (_,e,_) -> find_type e
     | PCase (_,_,t) -> t
     | PDo _ -> Tunit
@@ -42,25 +42,23 @@ let rec compile_constant env (code, data) = function
             pushq (imm i)
         in (code, data)
     | PConstant (String s,_) -> 
-        let label = unique_label ~isUnique:true "string" in
+        let label_s = unique_label ~isUnique:true "string" in
         let data = data ++ 
-            label ++ 
-            string s ++
-            null in 
+            label label_s ++ 
+            string s
+        in 
         let code = code ++ 
-            pushq (lab label) 
+            pushq (ilab label_s) 
         in (code, data)
-    | PVariable x -> 
+    | PVariable (x, _) -> 
         let code = code ++ 
             (* Not sure if this is right *)
             movq (ind ~ofs:x rbp) !%rax ++ 
             pushq !%rax
         in (code, data)
     | PTypedExpression (e,t) -> 
-        let code = code ++ 
-            compile_constant env (code, data) e
-        in (code, data)
-    | _ -> raise (Bad_type ("compile_constant", find_type e))
+        compile_constant env (code, data) e
+    | _ as e -> raise (Bad_type ("compile_constant", find_type e))
 
 and compile_binop env (code, data) = function
     | PBinaryOperation (e1, (Plus | Minus | Times | Divide) as binop, e2, t) -> 
@@ -81,7 +79,7 @@ and compile_binop env (code, data) = function
         let code = code ++
             popq rbx ++ popq rax ++
             cqto ++ idivq !%rbx ++
-            push !%rdx
+            pushq rdx
         in (code, data)
     (* Comparison operations *)
     | PBinaryOperation (e1, (Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual) as binop, e2, t) ->
@@ -148,7 +146,7 @@ and compile_function_call env (code, data) = function
         | Tstring ->
             compile_expr env (code, data) e
         | _ as t -> raise (Bad_type ("Function call : Show", t))
-    | PFunctionCall (f, args, t) ->
+    | PFunctionCall (f, _, args, t) ->
         let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env (code, data) e) (code, data) args in
         let code = code ++
             call f ++
@@ -156,8 +154,9 @@ and compile_function_call env (code, data) = function
             ret
         in (code, data)
     | _ as e -> raise (Bad_type ("Function call", find_type e))
-
-and compile_conditional = function
+  
+and compile_conditional env (code, data) e = 
+    match e with
     | PConditional (e1, e2, e3, t) ->
         let label_else = unique_label ~isUnique:true "else" in
         let label_end = unique_label ~isUnique:true "end" in
