@@ -174,7 +174,7 @@ and compile_expr env label_counter label_table (code, data) = function
     | PBinaryOperation _ as e -> compile_binop env label_counter label_table (code, data) e  
     | PFunctionCall _ as e -> compile_function_call env label_counter label_table (code, data) e    
     | PConditional _ as e -> compile_conditional env label_counter label_table (code, data) e
-    | PDo l -> List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) l
+    | PDo l -> List.fold_right (fun e (code, data) -> compile_expr env label_counter label_table (code, data) e) l (code, data)
     | PLet (l,e,t) -> raise (Todo "Let")
     | PCase (e,l,t) -> raise (Todo "Case")
     | PExplicitConstructor (i,el,t) -> raise (Todo "Explicit constructor")
