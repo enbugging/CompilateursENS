@@ -58,10 +58,20 @@ let rec compile_constant env label_counter label_table (code, data) = function
         in (code, data)
     | PTypedExpression (e,t) -> 
         compile_constant env label_counter label_table (code, data) e
+    | PConstr (s,_) -> (*TODO not right but didn't know what to do*)
+        let label_s = unique_label ~isUnique:true "string" label_counter label_table in
+        let data = data ++ 
+            label label_s ++ 
+            string s
+        in 
+        let code = code ++ 
+            pushq (ilab label_s) 
+        in (code, data)
+
     | e -> raise (Bad_type ("compile_constant", find_type e))
 
 and compile_binop env label_counter label_table (code, data) = function
-        | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times])-> 
+    | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times])-> 
         let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
         let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
@@ -99,6 +109,7 @@ and compile_binop env label_counter label_table (code, data) = function
             label positive_dividend_label ++
             pushq !%rax
         in (code, data)
+
     (* Comparison operations *)
     | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Equal ; NotEqual ; LessThan ; LessThanOrEqual ; GreaterThan ; GreaterThanOrEqual])->
         let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
@@ -188,11 +199,11 @@ and compile_conditional env label_counter label_table (code, data) e =
     | e -> raise (Bad_type ("Conditional", find_type e))
 
 and compile_expr env label_counter label_table (code, data) = function
-    | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env label_counter label_table (code, data) e
+    | PConstr _ | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env label_counter label_table (code, data) e
     | PBinaryOperation _ as e -> compile_binop env label_counter label_table (code, data) e  
     | PFunctionCall _ as e -> compile_function_call env label_counter label_table (code, data) e    
     | PConditional _ as e -> compile_conditional env label_counter label_table (code, data) e
     | PDo l -> List.fold_right (fun e (code, data) -> compile_expr env label_counter label_table (code, data) e) l (code, data)
-    | PLet (l,e,t) -> raise (Todo "Let")
-    | PCase (e,l,t) -> raise (Todo "Case")
-    | PExplicitConstructor (i,el,t) -> raise (Todo "Explicit constructor")
+    | PLet (l,e,t) -> (nop, nop) (*TODO*)
+    | PCase (e,l,t) -> (nop, nop) (*Todo "Case"*)
+    | PExplicitConstructor (i,el,t) -> (nop, nop) (*Todo "Explicit constructor"*)

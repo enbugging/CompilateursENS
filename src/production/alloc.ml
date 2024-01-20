@@ -20,7 +20,7 @@ let rec alloc_expr (env: local_env) (fpcur: int) = function
         | TConstant (c, t) -> PConstant (c,t), fpcur
 	| TVariable (x, t) -> begin match Smap.find_opt x env with
                                 | Some(dec) -> PVariable (dec, t), fpcur
-                                | None -> raise (VarUndef x)
+                                | None -> PConstr (x,t), fpcur
                                 end
 
 	| TTypedExpression (e,_, _) -> alloc_expr env fpcur e
@@ -47,11 +47,13 @@ let rec alloc_expr (env: local_env) (fpcur: int) = function
                         let e', fpmax' = alloc_expr env fpcur e in (max fpmax fpmax', e'::l)) (fpcur,[]) e_list in PDo (e_list'), fpcur' 
 
 	| TLet (x_i_e_i_list, e, t) -> PConstant (Boolean false, Tbool), fpcur (*TODO*)
-	| TLet (x_i_e_i_list, e, t) -> PConstant (Boolean false, Tbool), fpcur (*TODO*)
+	| TCase (e, l, t) -> PConstant (Boolean false, Tbool), fpcur (*TODO*)
 
 let alloc_def = function
         | NoDecl -> PNoDecl
-        | TDefinition (name,p_list,e) -> let e',_ = alloc_expr Smap.empty 0 e in
+        | TDefinition (name,p_list,e) -> let env = List.fold_left (fun acc p -> match p with
+                                                                                | PatargIdent x -> Smap.add x ((Smap.cardinal acc)*reg_size) acc) 
+                                                        (Smap.add "unit" 0 Smap.empty) p_list in let e',_ = alloc_expr env 0 e in
                                                         PDefinition(name,p_list, e')
 let rec alloc_stmt = function
         | TypeDeclaration (Name(name,start_p,end_p),

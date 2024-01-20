@@ -172,6 +172,17 @@ let type_of_texpr = function
 	| TLet (_,_,t) -> t
 	| TCase (_,_,t) -> t
 
+let set_new_type t = function
+        | TConstant (c,_) -> TConstant(c,t)
+	| TVariable (x, _) -> TVariable(x,t)
+	| TTypedExpression (e,t', _) -> TTypedExpression(e,t',t)
+	| TBinaryOperation (e1,binop,e2, _) -> TBinaryOperation (e1,binop,e2, t)
+	| TConditional (e1,e2,e3, _) -> TConditional (e1,e2,e3, t)
+        | TExplicitConstructor (x,l,_) -> TExplicitConstructor (x,l,t)
+	| TFunctionCall (f,i,e,_) -> TFunctionCall (f,i,e,t) 
+        | TDo l -> TDo l
+	| TLet (x,e,_) -> TLet(x,e,t)
+	| TCase (p,l,_) -> TCase(p,l,t)
 
 let rec type_expression g_env l_env expression = match expression with
         | {e=Constant c; location=(start_p,end_p)} -> 
@@ -211,7 +222,7 @@ let rec type_expression g_env l_env expression = match expression with
                         | Tstring, Concatenate, Tstring -> Tstring
                         | _,_,_ -> raise (Error (start_p, end_p, "Opérandes invalide pour cette opération binaire"))
                         end
-                        in TBinaryOperation(t_e1,binop,t_e2,res)
+                        in TBinaryOperation(set_new_type tau1 t_e1,binop,set_new_type tau2 t_e2, res)
 
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
                         let t_e1 = type_expression g_env l_env e1 in
