@@ -55,13 +55,15 @@ let log_code env (text, data) =
     In our cases, all integers are within long long range, so there can be at most 20 digits.
     Input: one value *)
 let show_int_code env (text, data) = 
+    let show_int = unique_label "show_int" in 
     let show_int_format = unique_label "show_int_format" in
     let data = data ++
         label show_int_format ++ (* Label for the string *)
         string "%lld" (* The string *)
         (* TODO : align *)
     in 
-    let text = text++
+    let text = text ++
+        label show_int ++ 
         movq (ind ~ofs:8 rsi) !%r15 ++ (* Move value to r15 *)
         movq (imm 20) !%rdi ++ (* Move 20 to rdi *)
         call "malloc" ++ (* Allocate 20 bytes for the string *)
