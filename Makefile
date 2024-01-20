@@ -13,3 +13,4 @@ clean:
 tests: ppurs.exe
 	cd test && ./test.sh -1 ../ppurs.exe
 	cd test && ./test.sh -2 ../ppurs.exe
+	cd test && ./test.sh -3 ../ppurs.exe

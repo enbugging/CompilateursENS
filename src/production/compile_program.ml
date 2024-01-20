@@ -19,7 +19,10 @@ let rec compile_stmt (code, data) statement =
 
 let compile_program p ofile =
     let decl_list = alloc p in
-    let (code, data) = List.fold_left compile_stmt (nop, nop) decl_list in
+    let (code,data) = log_code env (nop,nop) in
+    let (code,data) = show_int_code env (code,data) in
+    let (code,data) = show_bool_code env (code,data) in
+    let (code, data) = List.fold_left compile_stmt (code, data) decl_list in
     let p = {text=code; data=data} in
     let f = open_out ofile in
     let fmt = formatter_of_out_channel f in
