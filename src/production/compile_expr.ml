@@ -32,7 +32,7 @@ let rec find_type = function
     | PCase (_,_,t) -> t
     | PDo _ -> Tunit
 
-let rec compile_constant env (code, data) = function
+let rec compile_constant env label_counter label_table (code, data) = function
     | PConstant (Boolean b,_) -> 
         let code = code ++
             pushq (imm (if b then 1 else 0)) 
@@ -42,7 +42,7 @@ let rec compile_constant env (code, data) = function
             pushq (imm i)
         in (code, data)
     | PConstant (String s,_) -> 
-        let label_s = unique_label ~isUnique:true "string" in
+        let label_s = unique_label ~isUnique:true "string" label_counter label_table in
         let data = data ++ 
             label label_s ++ 
             string s
@@ -57,13 +57,13 @@ let rec compile_constant env (code, data) = function
             pushq !%rax
         in (code, data)
     | PTypedExpression (e,t) -> 
-        compile_constant env (code, data) e
+        compile_constant env label_counter label_table (code, data) e
     | _ as e -> raise (Bad_type ("compile_constant", find_type e))
 
-and compile_binop env (code, data) = function
+and compile_binop env label_counter label_table (code, data) = function
         | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times ; Divide])-> 
-        let (code, data) = compile_expr env (code, data) e1 in 
-        let (code, data) = compile_expr env (code, data) e2 in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
             popq rbx ++ popq rax ++
             (match binop with
@@ -74,8 +74,8 @@ and compile_binop env (code, data) = function
             pushq!%rax
         in (code, data)
     | PBinaryOperation(e1, Modulo, e2,t) -> 
-        let (code, data) = compile_expr env (code, data) e1 in 
-        let (code, data) = compile_expr env (code, data) e2 in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
             popq rbx ++ popq rax ++
             cqto ++ idivq !%rbx ++
@@ -83,8 +83,8 @@ and compile_binop env (code, data) = function
         in (code, data)
     (* Comparison operations *)
     | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Equal ; NotEqual ; LessThan ; LessThanOrEqual ; GreaterThan ; GreaterThanOrEqual])->
-        let (code, data) = compile_expr env (code, data) e1 in 
-        let (code, data) = compile_expr env (code, data) e2 in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
             popq rbx ++ popq rax ++
             match find_type e1 with
@@ -116,9 +116,9 @@ and compile_binop env (code, data) = function
         in (code, data)
     | _ as e -> raise (Bad_type ("Binary operation", find_type e))
 
-and compile_function_call env (code, data) = function 
+and compile_function_call env label_counter label_table (code, data) = function 
     | PFunctionCall ("log",_,[e],t) ->
-        let (code, data) = compile_expr env (code, data) e in 
+        let (code, data) = compile_expr env label_counter label_table  (code, data) e in 
         let code = code ++ 
             call "log" ++ 
             pushq !%rax ++
@@ -127,25 +127,25 @@ and compile_function_call env (code, data) = function
     | PFunctionCall ("show",_,[e],t) -> 
         begin match find_type e with
         | Tbool ->
-            let (code, data) = compile_expr env (code, data) e in
+            let (code, data) = compile_expr env label_counter label_table (code, data) e in
             let code = code ++
                 call "show_bool" ++
                 pushq !%rax ++
                 ret
             in (code, data)
         | Tint ->
-            let (code, data) = compile_expr env (code, data) e in
+            let (code, data) = compile_expr env label_counter label_table (code, data) e in
             let code = code ++
                 call "show_int" ++
                 pushq !%rax ++
                 ret
             in (code, data)
         | Tstring ->
-            compile_expr env (code, data) e
+            compile_expr env label_counter label_table (code, data) e
         | _ as t -> raise (Bad_type ("Function call : Show", t))
         end
     | PFunctionCall (f, _, args, t) ->
-        let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env (code, data) e) (code, data) args in
+        let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) args in
         let code = code ++
             call f ++
             pushq !%rax ++
@@ -153,32 +153,32 @@ and compile_function_call env (code, data) = function
         in (code, data)
     | _ as e -> raise (Bad_type ("Function call", find_type e))
   
-and compile_conditional env (code, data) e = 
+and compile_conditional env label_counter label_table (code, data) e = 
     match e with
     | PConditional (e1, e2, e3, t) ->
-        let label_else = unique_label ~isUnique:true "else" in
-        let label_end = unique_label ~isUnique:true "end" in
-        let (code, data) = compile_expr env (code, data) e1 in
+        let label_else = unique_label ~isUnique:true "else" label_counter label_table in
+        let label_end = unique_label ~isUnique:true "end" label_counter label_table in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in
         let code = code ++
             popq rax ++
             cmpq (imm 0) !%rax ++
             je label_else in 
-        let (code, data) = compile_expr env (code, data) e2 in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
             jmp label_end ++
             label label_else in
-        let (code, data) = compile_expr env (code, data) e3 in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e3 in
         let code = code ++
             label label_end
         in (code, data)
     | _ as e -> raise (Bad_type ("Conditional", find_type e))
 
-and compile_expr env (code, data) = function
-    | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env (code, data) e
-    | PBinaryOperation _ as e -> compile_binop env (code, data) e  
-    | PFunctionCall _ as e -> compile_function_call env (code, data) e    
-    | PConditional _ as e -> compile_conditional env (code, data) e
-    | PDo l -> List.fold_left (fun (code, data) e -> compile_expr env (code, data) e) (code, data) l
+and compile_expr env label_counter label_table (code, data) = function
+    | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env label_counter label_table (code, data) e
+    | PBinaryOperation _ as e -> compile_binop env label_counter label_table (code, data) e  
+    | PFunctionCall _ as e -> compile_function_call env label_counter label_table (code, data) e    
+    | PConditional _ as e -> compile_conditional env label_counter label_table (code, data) e
+    | PDo l -> List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) l
     | PLet (l,e,t) -> raise (Todo "Let")
     | PCase (e,l,t) -> raise (Todo "Case")
     | PExplicitConstructor (i,el,t) -> raise (Todo "Explicit constructor")

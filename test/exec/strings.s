@@ -26,23 +26,23 @@ show_true:
 	call log
 	pushq %rax
 	ret
-	pushq $string0
+	pushq $string1
 	call log
 	pushq %rax
 	ret
-	pushq $string0
+	pushq $string2
 	call log
 	pushq %rax
 	ret
-	pushq $string0
+	pushq $string3
 	call log
 	pushq %rax
 	ret
-	pushq $string0
+	pushq $string4
 	call log
 	pushq %rax
 	ret
-	pushq $string0
+	pushq $string5
 	call log
 	pushq %rax
 	ret
@@ -57,13 +57,13 @@ false:
 	.string "false"
 string0:
 	.string "hello world"
-string0:
+string1:
 	.string "hello world"
-string0:
+string2:
 	.string "hello \"world\""
-string0:
+string3:
 	.string "hello world"
-string0:
+string4:
 	.string "hello \nworld"
-string0:
+string5:
 	.string "hello world"

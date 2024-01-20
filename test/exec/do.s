@@ -26,7 +26,7 @@ show_true:
 	call log
 	pushq %rax
 	ret
-	pushq $string0
+	pushq $string1
 	call log
 	pushq %rax
 	ret
@@ -41,5 +41,5 @@ false:
 	.string "false"
 string0:
 	.string "world"
-string0:
+string1:
 	.string "hello"

@@ -29,7 +29,7 @@ show_true:
 	pushq $string0
 	jmp end0
 else0:
-	pushq $string0
+	pushq $string1
 end0:
 	call log
 	pushq %rax
@@ -37,12 +37,12 @@ end0:
 	pushq $1
 	popq %rax
 	cmpq $0, %rax
-	je else0
-	pushq $string0
-	jmp end0
-else0:
-	pushq $string0
-end0:
+	je else1
+	pushq $string2
+	jmp end1
+else1:
+	pushq $string3
+end1:
 	call log
 	pushq %rax
 	ret
@@ -56,12 +56,12 @@ end0:
 	pushq %rax
 	popq %rax
 	cmpq $0, %rax
-	je else0
-	pushq $string0
-	jmp end0
-else0:
-	pushq $string0
-end0:
+	je else3
+	pushq $string4
+	jmp end3
+else3:
+	pushq $string5
+end3:
 	call log
 	pushq %rax
 	ret
@@ -75,12 +75,12 @@ end0:
 	pushq %rax
 	popq %rax
 	cmpq $0, %rax
-	je else0
-	pushq $string0
-	jmp end0
-else0:
-	pushq $string0
-end0:
+	je else5
+	pushq $string6
+	jmp end5
+else5:
+	pushq $string7
+end5:
 	call log
 	pushq %rax
 	ret
@@ -95,17 +95,17 @@ false:
 	.string "false"
 string0:
 	.string "g"
-string0:
+string1:
 	.string "h"
-string0:
+string2:
 	.string "e"
-string0:
+string3:
 	.string "f"
-string0:
+string4:
 	.string "c"
-string0:
+string5:
 	.string "d"
-string0:
+string6:
 	.string "a"
-string0:
+string7:
 	.string "b"

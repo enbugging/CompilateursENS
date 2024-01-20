@@ -14,18 +14,15 @@ let rec hash_of_type t =
 
 (* Labels *)
 
-let label_counter = ref 0
-let label_table = ref StringSet.empty
-
 (* Modify a label if we need it to be unique, by set isUnique = true *)
-let unique_label ?(isUnique = false) label = 
+let unique_label ?(isUnique = false) label label_counter label_table = 
     if not isUnique then 
         let _ = 
           label_table := StringSet.add label !label_table
         in label
     else 
         begin
-            while StringSet.mem label !label_table do
+            while StringSet.mem (label ^ (string_of_int !label_counterstring_of_int !label_counter)) !label_table do
                 label_counter := !label_counter + 1;
             done;
             let new_label = label ^ (string_of_int !label_counter) in 
@@ -37,9 +34,9 @@ let unique_label ?(isUnique = false) label =
 (* Log function: print a string to the output.
     Input: pointer p to a string
 *)
-let log_code env (text, data) = 
-        let log = unique_label "log" in
-	let string_format = unique_label "string_format" in 
+let log_code env (text, data) label_counter label_table = 
+        let log = unique_label "log" label_counter label_table in
+	let string_format = unique_label "string_format" label_counter label_table in 
 	let data = data ++ 
 		label string_format ++ 
 		string "%s\n"
@@ -56,9 +53,9 @@ let log_code env (text, data) =
 (* Show_int: taking an int and return a pointer to a string representing the int.
     In our cases, all integers are within long long range, so there can be at most 20 digits.
     Input: one value *)
-let show_int_code env (text, data) = 
-    let show_int = unique_label "show_int" in 
-    let show_int_format = unique_label "show_int_format" in
+let show_int_code env (text, data) label_counter label_table = 
+    let show_int = unique_label "show_int" label_counter label_table in 
+    let show_int_format = unique_label "show_int_format" label_counter label_table in
     let data = data ++
         label show_int_format ++ (* Label for the string *)
         string "%lld" (* The string *)
@@ -80,11 +77,11 @@ let show_int_code env (text, data) =
 
 (* Show_bool: taking a bool and return a pointer to a string representing the bool 
    Input: value in rdi *)
-let show_bool_code env (text, data) = 
-    let show_bool = unique_label "show_bool" in
-    let true_label = unique_label "true" in
-    let false_label = unique_label "false" in 
-    let show_true = unique_label "show_true" in 
+let show_bool_code env (text, data) label_counter label_table = 
+    let show_bool = unique_label "show_bool" label_counter label_table in
+    let true_label = unique_label "true" label_counter label_table in
+    let false_label = unique_label "false" label_counter label_table in 
+    let show_true = unique_label "show_true" label_counter label_table in 
     (* Add two labels in data, each containing a string, either "true" or "false".
         i.e. 
         .data

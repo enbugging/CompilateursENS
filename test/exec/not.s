@@ -62,7 +62,7 @@ show_true:
 	pushq $string0
 	jmp end0
 else0:
-	pushq $string0
+	pushq $string1
 end0:
 	call log
 	pushq %rax
@@ -80,12 +80,12 @@ end0:
 	ret
 	popq %rax
 	cmpq $0, %rax
-	je else0
-	pushq $string0
-	jmp end0
-else0:
-	pushq $string0
-end0:
+	je else1
+	pushq $string2
+	jmp end1
+else1:
+	pushq $string3
+end1:
 	call log
 	pushq %rax
 	ret
@@ -100,9 +100,9 @@ false:
 	.string "false"
 string0:
 	.string "a"
-string0:
+string1:
 	.string "b"
-string0:
+string2:
 	.string "a"
-string0:
+string3:
 	.string "b"
