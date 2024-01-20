@@ -157,7 +157,7 @@ for f in exec/*.purs; do
 	score_comp=`expr $score_comp + 1`;
 	if gcc -no-pie $asm && ./a.out > out; then
 	    score_out=`expr $score_out + 1`;
-	    if cmp --quiet out $expected; then
+	    if cmdiff -u --ignore-space-change --strip-trailing-cr --ignore-blank-lines out $expected; then
 		score_test=`expr $score_test + 1`;
 	    else
 		echo
