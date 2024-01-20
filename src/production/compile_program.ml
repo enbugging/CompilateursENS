@@ -30,7 +30,8 @@ let compile_program p ofile =
 	let (code,data) = show_int_code env (code,data) label_counter label_table in
 	let (code,data) = show_bool_code env (code,data) label_counter label_table in
   let (code,data) = not_code env (code,data) label_counter label_table in 
-	let (code, data) = List.fold_left compile_stmt (code, data) decl_list in
+  let (code,data) = mod_code env (code,data) label_counter label_table in
+	let (code,data) = List.fold_left compile_stmt (code, data) decl_list in
 	let p = {text=code; data=data} in
 	let f = open_out ofile in
 	let fmt = formatter_of_out_channel f in

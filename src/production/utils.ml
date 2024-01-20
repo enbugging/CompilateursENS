@@ -140,3 +140,39 @@ let not_code env (text, data) label_counter label_table =
     xorq (imm 1) !%rax ++
     ret
   in (text, data)
+
+let mod_code env (text, data) label_counter label_table = 
+  let mod_label = unique_label "mod" label_counter label_table in
+  let mod_by_0_label = unique_label "mod_by_0" label_counter label_table in
+  let mod_end_label = unique_label "mod_end" label_counter label_table in
+  let text = text ++
+    label mod_label ++
+    
+    (* Get the dividend and divisor *)
+    popq r15 ++ (* Pop the return address to the divisor to r15 *)
+    popq rax ++ (* Pop the return address to the dividend to rax *)
+    popq rbx ++ (* Move the divisor to rbx *)
+    pushq !%r15 ++ (* Push the return address back to the stack *)
+
+    (* Check if the divisor is 0 *)
+    cmpq (imm 0) !%rbx ++ (* Compare the divisor with 0 *)
+    je mod_by_0_label ++ (* If divisor is 0, return 0 *)
+
+    (* Use idivq to get remainder result *)
+    cqto ++ (* Sign extend rax to rdx:rax *)
+    idivq !%rbx ++ (* Divide rdx:rax by rbx *)
+
+    (* Now we check the sign of the remainder, and correct if needed. *)
+    (* If the result is negative, we need to add the divisor to the result. *)
+    cmpq (imm 0) !%rdx ++ (* Compare the remainder with 0 *)
+    jge mod_end_label ++ (* If remainder is non-negative, jump to end *)
+    addq !%rbx !%rdx ++ (* Add the divisor to the result *)
+    label mod_end_label ++
+
+    movq !%rdx !%rax ++ (* Move the remainder to rax *)
+    ret ++
+
+    label mod_by_0_label ++
+    movq (imm 0) !%rax ++ (* Move 0 to rax *)
+    ret
+  in (text, data)
