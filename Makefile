@@ -9,7 +9,7 @@ ppurs.exe:
 clean:
 	dune clean
 	rm -f ppurs.exe
-	rm -f test/exec/*.s
+	rm -f test/exec/*.[s]
 	rm -f test/out
 
 tests: ppurs.exe
