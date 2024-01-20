@@ -145,6 +145,7 @@ let mod_code env (text, data) label_counter label_table =
   let mod_label = unique_label "mod" label_counter label_table in
   let mod_by_0_label = unique_label "mod_by_0" label_counter label_table in
   let mod_end_label = unique_label "mod_end" label_counter label_table in
+  let add_to_res_label = unique_label "add_to_res" label_counter label_table in
   let text = text ++
     label mod_label ++
     
@@ -166,9 +167,18 @@ let mod_code env (text, data) label_counter label_table =
     (* If the result is negative, we need to add the divisor to the result. *)
     cmpq (imm 0) !%rdx ++ (* Compare the remainder with 0 *)
     jge mod_end_label ++ (* If remainder is non-negative, jump to end *)
-    addq !%rbx !%rdx ++ (* Add the divisor to the result *)
-    label mod_end_label ++
+    cmpq (imm 0) !%rbx ++ (* Compare the divisor with 0 *)
+    jge add_to_res_label ++ (* If divisor is non-negative, add to the remaider *)
+    subq !%rbx !%rdx ++ (* Subtract the divisor from the remainder *)
+    jmp mod_end_label ++ (* Jump to end *)
 
+    (* If the result is positive, we need to subtract the divisor from the result. *)
+    label add_to_res_label ++
+    addq !%rbx !%rdx ++ (* Add the divisor to the remainder *)
+    jmp mod_end_label ++ (* Jump to end *)
+
+    (* End of the function *)
+    label mod_end_label ++
     movq !%rdx !%rax ++ (* Move the remainder to rax *)
     ret ++
 

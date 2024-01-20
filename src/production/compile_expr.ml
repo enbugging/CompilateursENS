@@ -61,7 +61,7 @@ let rec compile_constant env label_counter label_table (code, data) = function
     | e -> raise (Bad_type ("compile_constant", find_type e))
 
 and compile_binop env label_counter label_table (code, data) = function
-        | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times ; Divide])-> 
+        | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times])-> 
         let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
         let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
@@ -73,13 +73,31 @@ and compile_binop env label_counter label_table (code, data) = function
             | Divide -> cqto ++ idivq !%rbx ) ++ 
             pushq!%rax
         in (code, data)
-    | PBinaryOperation(e1, Modulo, e2,t) -> 
+    | PBinaryOperation(e1, Divide, e2,t) -> 
+        let positive_dividend_label = unique_label ~isUnique:true "positive_dividend" label_counter label_table in
+        let positive_divisor_label = unique_label ~isUnique:true "positive_divisor" label_counter label_table in
         let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
         let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
         let code = code ++
-            popq rbx ++ popq rax ++
-            cqto ++ idivq !%rbx ++
-            pushq !%rdx
+            popq rbx ++ 
+            popq rax ++
+            movq !%rax !%rdi ++ (* Dividend *)
+            cqto ++ 
+            idivq !%rbx ++
+
+            cmpq (imm 0) !%rdi ++ (* Check if dividend is positive *)
+            jge positive_dividend_label ++ (* If it is negative, check if divisor is positive *)
+            cmpq (imm 0) !%rbx ++
+            jge positive_divisor_label ++ (* If it is negative, we need to add 1 to the quotient *)
+            addq (imm 1) !%rax ++
+            jmp positive_dividend_label ++
+            
+            label positive_divisor_label ++ (* If the divisor is positive, we need to substract 1 to the quotient *)
+            subq (imm 1) !%rax ++
+            jmp positive_dividend_label ++
+
+            label positive_dividend_label ++
+            pushq !%rax
         in (code, data)
     (* Comparison operations *)
     | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Equal ; NotEqual ; LessThan ; LessThanOrEqual ; GreaterThan ; GreaterThanOrEqual])->
