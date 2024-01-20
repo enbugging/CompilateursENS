@@ -22,6 +22,7 @@ show_bool:
 show_true:
 	movq $true, %rax
 	ret
+_start:
 	pushq $string0
 	call log
 	pushq %rax

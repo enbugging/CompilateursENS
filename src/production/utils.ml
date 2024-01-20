@@ -22,7 +22,7 @@ let unique_label ?(isUnique = false) label label_counter label_table =
         in label
     else 
         begin
-            while StringSet.mem (label ^ (string_of_int !label_counterstring_of_int !label_counter)) !label_table do
+            while StringSet.mem (label ^ (string_of_int !label_counter)) !label_table do
                 label_counter := !label_counter + 1;
             done;
             let new_label = label ^ (string_of_int !label_counter) in 

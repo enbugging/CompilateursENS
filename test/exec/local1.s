@@ -22,7 +22,9 @@ show_bool:
 show_true:
 	movq $true, %rax
 	ret
+f_l_Unit_r_l_Effect_l_Unit_r_r:
 	pushq $0
+_start:
 	pushq $0
 	.data
 string_format:

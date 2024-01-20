@@ -3,6 +3,7 @@ open Alloc
 open Compile_expr
 open Utils
 open Format
+open X86_64
 
 let env = Smap.empty
 
@@ -14,8 +15,8 @@ let rec compile_stmt (code, data) statement =
   match statement with
   | PTypeDeclaration (_, _, _, list_of_types_of_args, def) -> 
     let hash_of_types_of_args = hash_of_list_of_types list_of_types_of_args in 
-    let PDefinition (label, _, expr) = def in 
-    let new_label = label ^ hash_of_types_of_args in
+    let PDefinition (ident, _, expr) = def in 
+    let new_label = if ident = "main" then "_start" else ident ^ hash_of_types_of_args in
     compile_expr env label_counter label_table (code ++ label new_label, data) expr
   | PData _ -> (nop, nop) (* TODO *)
   | PClass _ -> (nop, nop) 

@@ -1,4 +1,5 @@
 	.text
+_start:
 	pushq $1
 	call foo
 	pushq %rax

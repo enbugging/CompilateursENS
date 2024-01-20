@@ -1,4 +1,5 @@
 	.text
+_start:
 	pushq $1
 	call bar
 	pushq %rax

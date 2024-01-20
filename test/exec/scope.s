@@ -22,6 +22,7 @@ show_bool:
 show_true:
 	movq $true, %rax
 	ret
+_start:
 	pushq $0
 	.data
 string_format:
