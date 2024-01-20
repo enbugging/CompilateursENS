@@ -129,3 +129,14 @@ let show_bool_code env (text, data) label_counter label_table =
 		movq (ilab true_label) !%rax ++ (* Push the address of true_label if rax is true *)
 		ret
 	in (text, data)
+
+let not_code env (text, data) label_counter label_table = 
+  let not_label = unique_label "not" label_counter label_table in
+  let text = text ++
+    label not_label ++
+    popq r15 ++
+    popq rax ++
+    pushq !%r15 ++
+    xorq (imm 1) !%rax ++
+    ret
+  in (text, data)
