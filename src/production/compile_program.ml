@@ -16,7 +16,7 @@ let rec compile_stmt (code, data) statement =
     let hash_of_types_of_args = hash_of_list_of_types list_of_types_of_args in 
     let PDefinition (label, _, expr) = def in 
     let new_label = label ^ hash_of_types_of_args in
-    compile_expr env label_counter label_table (code, data) expr
+    compile_expr env label_counter label_table (code ++ label new_label, data) expr
   | PData _ -> (nop, nop) (* TODO *)
   | PClass _ -> (nop, nop) 
   | PInstance _ -> (nop, nop) (* TODO *)
