@@ -247,8 +247,7 @@ let rec type_expression g_env l_env expression = match expression with
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                         let t_e_list = List.map (fun (e_i,tau_i) -> let t_e_i = type_expression g_env l_env e_i in unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau_i); t_e_i) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments"))) in
 
-                        TExplicitConstructor(x,t_e_list, Tconstr (data_name, substitution !sigma vars)
-)
+                        TExplicitConstructor(x,t_e_list, Tconstr (data_name, substitution !sigma vars))
                         
 	| {e=FunctionCall (f, e_list); location=(start_p,end_p)} ->
                         let f,vars, instances, tau_list = trouve_g_env_fonction f g_env start_p end_p in
@@ -257,6 +256,7 @@ let rec type_expression g_env l_env expression = match expression with
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                         let t_e_list = List.map (fun (e_i,tau_i) -> let t_e_i = type_expression g_env l_env e_i in unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau_i); t_e_i) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !"))) in
                         (*Peut-être appliquer la substitution aux variables des instances avant d'essayer de les résoudre*)
+                        List.iter (fun (v,t) -> print_string ("\nla variable "^v^" a le type: "); print_type t) !sigma;
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
                         TFunctionCall(f, instances, t_e_list, substitution_type !sigma ret_type)
 

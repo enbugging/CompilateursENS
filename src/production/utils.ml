@@ -1,21 +1,16 @@
 open Typing.Tast
+open Preprocessing.Ast
 open X86_64
 
 module StringSet = Set.Make(String)
 
 (* Hash of list typ, return a string *)
 let rec hash_of_type t = 
-    match t with 
-    | Tint -> "int"
-    | Tbool -> "bool"
-    | Tstring -> "string"
-    | Tunit -> "unit"
-    | Tvar v -> "var" ^ v
-    | QuantifTvar v -> "quantifTvar" ^ v
-    | Teffect t -> "effect_l_" ^ hash_of_type t ^ "_r"
-    | Tconstr (s, types) -> let hash_ts = hash_of_list_of_types types in "const_l_" ^ s ^ "_r_" ^ hash_ts
-
-and hash_of_list_of_types types = List.fold_left (fun acc t -> acc ^ "_l_" ^ hash_of_type t ^ "_r") "" types
+        match t with
+        | TypeConstructor (Name(ident,_,_),l) -> ident ^ hash_of_list_of_types l
+        | TypeIdent (Name(ident,_,_)) -> ident
+    
+        and hash_of_list_of_types types = List.fold_left (fun acc t -> acc ^ "_l_" ^ hash_of_type t ^ "_r") "" types
 
 (* Labels *)
 

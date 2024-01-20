@@ -61,7 +61,7 @@ let rec compile_constant env (code, data) = function
     | _ as e -> raise (Bad_type ("compile_constant", find_type e))
 
 and compile_binop env (code, data) = function
-    | PBinaryOperation (e1, (Plus | Minus | Times | Divide) as binop, e2, t) -> 
+        | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Plus ; Minus ; Times ; Divide])-> 
         let (code, data) = compile_expr env (code, data) e1 in 
         let (code, data) = compile_expr env (code, data) e2 in
         let code = code ++
@@ -79,10 +79,10 @@ and compile_binop env (code, data) = function
         let code = code ++
             popq rbx ++ popq rax ++
             cqto ++ idivq !%rbx ++
-            pushq rdx
+            pushq !%rdx
         in (code, data)
     (* Comparison operations *)
-    | PBinaryOperation (e1, (Equal | NotEqual | Less | LessEqual | Greater | GreaterEqual) as binop, e2, t) ->
+    | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Equal ; NotEqual ; LessThan ; LessThanOrEqual ; GreaterThan ; GreaterThanOrEqual])->
         let (code, data) = compile_expr env (code, data) e1 in 
         let (code, data) = compile_expr env (code, data) e2 in
         let code = code ++
@@ -93,11 +93,11 @@ and compile_binop env (code, data) = function
                 (match binop with
                 | Equal -> sete !%al
                 | NotEqual -> setne !%al
-                | Less -> setl !%al
-                | LessEqual -> setle !%al
-                | Greater -> setg !%al
-                | GreaterEqual -> setge !%al) ++
-                movzbq !%al !%rax ++
+                | LessThan-> setl !%al
+                | LessThanOrEqual -> setle !%al
+                | GreaterThan -> setg !%al
+                | GreaterThanOrEqual -> setge !%al) ++
+                movzbq !%al rax ++
                 pushq !%rax
             | Tstring ->
                 movq !%rax !%rdi ++ 
@@ -106,19 +106,19 @@ and compile_binop env (code, data) = function
                 (match binop with
                 | Equal -> sete !%al
                 | NotEqual -> setne !%al
-                | Less -> setl !%al
-                | LessEqual -> setle !%al
-                | Greater -> setg !%al
-                | GreaterEqual -> setge !%al) ++
-                movzbq !%al !%rax ++
+                | LessThan-> setl !%al
+                | LessThanOrEqual -> setle !%al
+                | GreaterThan -> setg !%al
+                | GreaterThanOrEqual -> setge !%al) ++
+                movzbq !%al rax ++
                 pushq !%rax
             | _  as t -> raise (Bad_type ("Comparison operations", t))
         in (code, data)
     | _ as e -> raise (Bad_type ("Binary operation", find_type e))
 
 and compile_function_call env (code, data) = function 
-    | PFunctionCall ("log",[e],t) ->
-        match t with 
+    | PFunctionCall ("log",_,[e],t) ->
+        begin match t with 
         | Tstring -> 
             let (code, data) = compile_expr env (code, data) e in 
             let code = code ++ 
@@ -127,8 +127,9 @@ and compile_function_call env (code, data) = function
                 ret 
             in (code, data)
         | _ as t -> raise (Bad_type ("Function call : log", t))
-    | PFunctionCall ("Show",[e],t) -> 
-        match t with
+        end
+    | PFunctionCall ("Show",_,[e],t) -> 
+        begin match t with
         | Tbool ->
             let (code, data) = compile_expr env (code, data) e in
             let code = code ++
@@ -146,6 +147,7 @@ and compile_function_call env (code, data) = function
         | Tstring ->
             compile_expr env (code, data) e
         | _ as t -> raise (Bad_type ("Function call : Show", t))
+        end
     | PFunctionCall (f, _, args, t) ->
         let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env (code, data) e) (code, data) args in
         let code = code ++
@@ -184,4 +186,3 @@ and compile_expr env (code, data) = function
     | PLet (l,e,t) -> raise (Todo "Let")
     | PCase (e,l,t) -> raise (Todo "Case")
     | PExplicitConstructor (i,el,t) -> raise (Todo "Explicit constructor")
-    | _ -> nop

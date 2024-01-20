@@ -52,7 +52,8 @@ let () =
 
     (* Production *)
     if !ofile = "" then ofile := Filename.chop_suffix file ".purs" ^ ".s";
-    Production.compile_program t !ofile
+    let TFile p,_ = t in
+    Production.Compile_program.compile_program p !ofile
 	with
 		| Lexer.Illegal_character s ->
 			report (lexeme_start_p lb, lexeme_end_p lb);
