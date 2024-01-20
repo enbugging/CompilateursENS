@@ -13,7 +13,6 @@ type typ =
 	| Teffect of typ
         | Tconstr of tconstr
 
-
 and tconstr = string * typ list
 
 type tdectype = string * typ

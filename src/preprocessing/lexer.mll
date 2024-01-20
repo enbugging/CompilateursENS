@@ -57,6 +57,7 @@ rule next_tokens = parse
     | ('\n'|"\r\n") { new_line lexbuf; next_tokens lexbuf }
     | (space | line_comment)+
                     { next_tokens lexbuf }
+    | "unit"        {CONSTANT (Unit)}
     | lident as id  { LIDENT id }
     | uident as id  { UIDENT id }
     | '+'           { PLUS }

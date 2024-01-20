@@ -19,6 +19,7 @@ type constant =
 	| Boolean of bool
 	| Integer of int
 	| String of string
+        | Unit
 
 type binaryOperation = 
 	| Plus

@@ -1,5 +1,6 @@
 include X86_64
 include Utils
+open Typing.PrettyPrinterBeta
 open Past 
 open Typing.Tast
 
@@ -50,6 +51,7 @@ let rec compile_constant env label_counter label_table (code, data) = function
         let code = code ++ 
             pushq (ilab label_s) 
         in (code, data)
+    | PConstant (Unit, _) -> (code,data) (*TODO*)
     | PVariable (x, _) -> 
         let code = code ++ 
             (* Not sure if this is right *)
@@ -141,7 +143,7 @@ and compile_binop env label_counter label_table (code, data) = function
                 | GreaterThanOrEqual -> setge !%al) ++
                 movzbq !%al rax ++
                 pushq !%rax
-            | t -> raise (Bad_type ("Comparison operations", t))
+            | t -> print_type t; raise (Bad_type ("Comparison operations", t))
         in (code, data)
     | e -> raise (Bad_type ("Binary operation", find_type e))
 
@@ -153,21 +155,21 @@ and compile_function_call env label_counter label_table (code, data) = function
         in (code, data)
     | PFunctionCall ("show",_,[e],t) -> 
         begin match find_type e with
-        | Tbool ->
+        | Tbool | Tconstr("Boolean",[])->
             let (code, data) = compile_expr env label_counter label_table (code, data) e in
             let code = code ++
                 call "show_bool" ++
                 pushq !%rax
             in (code, data)
-        | Tint ->
+        | Tint | Tconstr("Int",[])->
             let (code, data) = compile_expr env label_counter label_table (code, data) e in
             let code = code ++
                 call "show_int" ++ 
                 pushq !%rax
             in (code, data)
-        | Tstring ->
+        | Tstring | Tconstr("String",[])->
             compile_expr env label_counter label_table (code, data) e
-        | t -> raise (Bad_type ("Function call : Show", t))
+        | t -> print_type t; raise (Bad_type ("Function call : Show", t))
         end
     | PFunctionCall (f, _, args, t) ->
         let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) args in

@@ -190,6 +190,7 @@ let rec type_expression g_env l_env expression = match expression with
                         | Integer _ -> TConstant (c, Tint)
                         | Boolean _ -> TConstant (c, Tbool)
                         | String _ -> TConstant (c, Tstring)
+                        | Unit -> TConstant (Unit, Tunit)
                         end
 
         | {e=Variable x; location=(start_p,end_p)} ->
@@ -222,7 +223,9 @@ let rec type_expression g_env l_env expression = match expression with
                         | Tstring, Concatenate, Tstring -> Tstring
                         | _,_,_ -> raise (Error (start_p, end_p, "Opérandes invalide pour cette opération binaire"))
                         end
-                        in TBinaryOperation(set_new_type tau1 t_e1,binop,set_new_type tau2 t_e2, res)
+                        in if tau1 = Tunit then TConstant (Boolean (binop = Equal), Tbool)
+                        else
+                                TBinaryOperation(set_new_type tau1 t_e1,binop,set_new_type tau2 t_e2, res)
 
 	| {e=Conditional (e1, e2, e3); location=(start_p,end_p)} ->
                         let t_e1 = type_expression g_env l_env e1 in
