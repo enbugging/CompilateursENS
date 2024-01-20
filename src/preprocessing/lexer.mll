@@ -63,7 +63,7 @@ rule next_tokens = parse
     | '-'           { MINUS }
     | '*'           { TIMES }
     | '/'           { DIVIDE }
-    | '%'           { MODULO }
+    | "mod"           { MODULO }
     | "<>"          { CONCATENATE }
     | '='           { EQUAL }
     | "=="          { CMP Equal }

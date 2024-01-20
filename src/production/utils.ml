@@ -38,12 +38,14 @@ let unique_label ?(isUnique = false) label =
     Input: pointer p to a string
 *)
 let log_code env (text, data) = 
+        let log = unique_label "log" in
 	let string_format = unique_label "string_format" in 
 	let data = data ++ 
 		label string_format ++ 
 		string "%s\n"
 	in
 	let text = text ++
+                label log ++
 		popq rsi ++ (* Move the pointer to rsi *)
 		movq (ilab string_format) !%rdi ++ (* Move the address of the string to rdi *)
 		xorq !%rax !%rax ++ (* Set rax to 0 *)

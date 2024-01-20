@@ -1,9 +1,11 @@
 	.text
+log:
 	popq %rsi
 	movq $string_format, %rdi
 	xorq %rax, %rax
 	call printf
 	ret
+show_int:
 	movq 8(%rsi), %r15
 	movq $20, %rdi
 	call malloc
