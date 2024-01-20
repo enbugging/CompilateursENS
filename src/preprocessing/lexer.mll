@@ -92,6 +92,7 @@ rule next_tokens = parse
 
 and string = parse 
     | '"'           { let s = Buffer.contents string_buffer in Buffer.reset string_buffer; s }
+    | "\\\\"        { Buffer.add_char string_buffer '\\'; string lexbuf }
     | '\\'          { gap lexbuf}
     | "\\n"         { Buffer.add_char string_buffer '\n'; string lexbuf }
     | "\n"          { raise (Illegal_character '\n') }
