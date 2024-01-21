@@ -181,8 +181,6 @@ and compile_function_call env label_counter label_table (code, data) = function
             popq rsp ++ (* Restore rsp *)
             pushq !%rax 
         in (code, data)
-    (* TODO: remove arguments from stacks *)
-        in (code, data)
     | e -> raise (Bad_type ("Function call", find_type e))
   
 and compile_conditional env label_counter label_table (code, data) e = 
