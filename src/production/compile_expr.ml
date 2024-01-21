@@ -55,7 +55,7 @@ let rec compile_constant env label_counter label_table (code, data) = function
     | PVariable (x, _) -> 
         let code = code ++ 
             (* Not sure if this is right *)
-            movq (ind ~ofs:x rbp) !%rax ++ 
+            movq (ind ~ofs:x rsp) !%rax ++ 
             pushq !%rax
         in (code, data)
     | PTypedExpression (e,t) -> 
@@ -172,10 +172,15 @@ and compile_function_call env label_counter label_table (code, data) = function
         | t -> print_type t; raise (Bad_type ("Function call : Show", t))
         end
     | PFunctionCall (f, _, args, t) ->
+        let code = code ++ 
+            movq !%rsp !%r14 in (* Save rsp to r14, which we guarantee to not be modified by the function call *)
         let (code, data) = List.fold_left (fun (code, data) e -> compile_expr env label_counter label_table (code, data) e) (code, data) args in
         let code = code ++
+            pushq !%r14 ++ (* Save r14 to stack *)
             call f ++
-            pushq !%rax
+            popq rsp ++ (* Restore rsp *)
+            pushq !%rax 
+        in (code, data)
     (* TODO: remove arguments from stacks *)
         in (code, data)
     | e -> raise (Bad_type ("Function call", find_type e))

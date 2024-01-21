@@ -126,9 +126,12 @@ let not_code env (text, data) label_counter label_table =
   let text = text ++
     label not_label ++
     popq r15 ++
+    popq r14 ++
     popq rax ++
+    pushq !%r14 ++
     pushq !%r15 ++
-    xorq (imm 1) !%rax ++
+    notq !%rax ++
+    andq (imm 1) !%rax ++
     ret
   in (text, data)
 
@@ -142,8 +145,10 @@ let mod_code env (text, data) label_counter label_table =
     
     (* Get the dividend and divisor *)
     popq r15 ++ (* Pop the return address to the divisor to r15 *)
+    popq r14 ++ (* Pop the old value of rsp to r14 *)
     popq rax ++ (* Pop the return address to the dividend to rax *)
     popq rbx ++ (* Move the divisor to rbx *)
+    pushq !%r14 ++ (* Push the old value of rsp back to the stack *)
     pushq !%r15 ++ (* Push the return address back to the stack *)
 
     (* Check if the divisor is 0 *)
