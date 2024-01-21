@@ -150,6 +150,16 @@ and compile_binop env label_counter label_table (code, data) = function
             label label_end ++
             pushq !%rax
         in (code, data)
+    | PBinaryOperation (e1, Concatenate, e2, t) ->
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
+        let code = code ++
+            popq rbx ++ popq rax ++
+            movq !%rax !%rdi ++ 
+            movq !%rbx !%rsi ++ 
+            call "strcat" ++
+            pushq !%rax
+        in (code, data)
 
     (* Comparison operations *)
     | PBinaryOperation (e1, binop, e2, t) when (List.mem binop [Equal ; NotEqual ; LessThan ; LessThanOrEqual ; GreaterThan ; GreaterThanOrEqual])->
