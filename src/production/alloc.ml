@@ -52,7 +52,7 @@ let rec alloc_expr (env: local_env) (fpcur: int) = function
 let alloc_def = function
         | NoDecl -> PNoDecl
         | TDefinition (name,p_list,e) -> let env = List.fold_left (fun acc p -> match p with
-                                                                                | PatargIdent x -> Smap.add x ((1 + Smap.cardinal acc)*reg_size) acc) 
+                                                                                | PatargIdent x -> Smap.add x ((2 + Smap.cardinal acc)*reg_size) acc) 
                                                         (Smap.add "unit" 0 Smap.empty) p_list in let e',_ = alloc_expr env 0 e in
                                                         PDefinition(name,p_list, e')
 let rec alloc_stmt = function

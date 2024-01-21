@@ -21,7 +21,6 @@
 %left PLUS MINUS
 %left TIMES DIVIDE MODULO
 %nonassoc unary_minus
-%nonassoc ELSE
 
 /* Start symbol */
 %start file

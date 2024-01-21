@@ -18,8 +18,18 @@ let rec compile_stmt (code, data) statement =
 		if ident = "main" then 
 			compile_expr env label_counter label_table (code ++ globl "main" ++ label "main", data) expr
 		else let new_label = ident in
-			let (code, data) = compile_expr env label_counter label_table (code ++ label new_label, data) expr
-      in (code ++ popq rax ++ ret, data)
+			let (code, data) = compile_expr env label_counter label_table (
+        code ++ 
+        label new_label ++ 
+        pushq !%rbp ++ 
+        movq !%rsp !%rbp (* TODO: subq rsp to make room for local variable*)
+        , data) expr
+      in (
+        code ++ 
+        popq rax ++ 
+        movq !%rbp !%rsp ++
+        popq rbp ++ 
+        ret, data)
 	| PData _ -> (nop, nop) (* TODO *)
 	| PClass _ -> (nop, nop) 
 	| PInstance _ -> (nop, nop) (* TODO *)

@@ -55,7 +55,7 @@ let rec compile_constant env label_counter label_table (code, data) = function
     | PVariable (x, _) -> 
         let code = code ++ 
             (* Not sure if this is right *)
-            movq (ind ~ofs:x rsp) !%rax ++ 
+            movq (ind ~ofs:x rbp) !%rax ++ 
             pushq !%rax
         in (code, data)
     | PTypedExpression (e,t) -> 
