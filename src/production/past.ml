@@ -15,7 +15,7 @@ type p_expr =
     | PExplicitConstructor of int * p_expr list * typ
     | PFunctionCall of ident * tinstance list * p_expr list * typ
     | PDo of p_expr list
-    | PLet of (int * p_expr) list * p_expr * typ
+    | PLet of (int * p_expr) list * p_expr * typ * int 
     | PCase of p_expr * (pattern * p_expr) list * typ
 
 type p_def = PDefinition of ident * patarg list * p_expr | PNoDecl

@@ -48,17 +48,18 @@ let rec alloc_expr (env: local_env) (fpcur: int) = function
 
 	| TLet (x_i_e_i_list, e, t) -> 
                         let fpmax = ref fpcur in
-                        let current_fpcur = ref fpcur in
+                        let current_fpcur = ref (fpcur) in
                         let current_env = ref env in
                         let p_x_i_e_i_list = List.map (fun (x,e) -> 
                                 let e', fpmax1 = alloc_expr !current_env !current_fpcur e in 
                                 fpmax := max !fpmax fpmax1;
-                                current_env := Smap.add x (- (!current_fpcur)) !current_env;
                                 current_fpcur := 8 + !current_fpcur; 
+                                current_env := Smap.add x (- (!current_fpcur)) !current_env;
                                 (-(!current_fpcur),e')
                         ) x_i_e_i_list in
                         let e', fpmax2 = alloc_expr !current_env !current_fpcur e in
-                        PLet(p_x_i_e_i_list,e',t), max !fpmax fpmax2
+                        let new_fpcur = max !fpmax fpmax2 in
+                        PLet(p_x_i_e_i_list,e',t, new_fpcur), new_fpcur
 
 	| TCase (e, l, t) -> PConstant (Boolean false, Tbool), fpcur (*TODO*)
 

@@ -29,7 +29,7 @@ let rec find_type = function
     | PConditional (_,_,_,t) -> t
     | PExplicitConstructor (_,_,t) -> t
     | PFunctionCall (_,_,_,t) -> t
-    | PLet (_,e,_) -> find_type e
+    | PLet (_,e,_,_) -> find_type e
     | PCase (_,_,t) -> t
     | PDo _ -> Tunit
 
@@ -253,11 +253,14 @@ and compile_conditional env label_counter label_table (code, data) e =
     | e -> raise (Bad_type ("Conditional", find_type e))
 
 and compile_let env label_counter label_table (code, data) = function
-        | PLet (x_i_e_i_list, e, t) -> 
-                        let (code,data) = List.fold_left (fun acc (dec,e_i) -> let (code',data') = compile_expr env label_counter label_table acc e_i in
-                        (code' ++ popq rax ++ movq !%rax (ind ~ofs:dec rbp),data')
-                        ) (code,data) x_i_e_i_list in
-                        compile_expr env label_counter label_table (code,data) e
+        | PLet (x_i_e_i_list, e, t, fpcur) -> 
+                        let (code, data) = 
+                            List.fold_left (fun acc (dec,e_i) -> let (code',data') = compile_expr env label_counter label_table acc e_i in
+                                (code' ++ popq rax ++ movq !%rax (ind ~ofs:dec rbp),data')
+                            ) (code ++ subq (imm fpcur) !%rsp,
+                                data) x_i_e_i_list in
+                        let (code, data) = compile_expr env label_counter label_table (code,data) e
+                        in (code ++ addq (imm fpcur) !%rsp,data)
         | e -> raise (Bad_type ("let", find_type e))
 
 and compile_expr env label_counter label_table (code, data) = function

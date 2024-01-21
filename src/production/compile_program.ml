@@ -17,7 +17,13 @@ let rec compile_stmt (code, data) statement =
         let PDefinition (ident, _, expr) = def in 
         if ident = "main" then 
             let _ = unique_label "main" label_counter label_table in
-            compile_expr env label_counter label_table (code ++ globl "main" ++ label "main", data) expr
+            let (code, data) = compile_expr env label_counter label_table (
+                code ++ 
+                globl "main" ++ 
+                label "main" ++
+                movq !%rsp !%rbp,
+                data) expr
+            in (code, data)
         else let new_label = unique_label ident label_counter label_table in
             let (code, data) = compile_expr env label_counter label_table (
                 code ++ 
