@@ -40,6 +40,30 @@ type t_def =
   (* Type declaration *)
         | NoDecl (*Type ajouté pour pouvoir renvoyer des couples de déclarations, après le typage, ce qui ne sert que pour joindre une déclaration de fonction à son unique définition une fois la pattern matching remplacé par un case*)
 
+let type_of_texpr = function	
+        | TConstant (_,t) -> t
+	| TVariable (_, t) -> t
+	| TTypedExpression (_,_, t) -> t
+	| TBinaryOperation (_,_,_, t) -> t
+	| TConditional (_,_,_, t) -> t
+        | TExplicitConstructor (_,_,t) -> t
+	| TFunctionCall (_,_,_,t) -> t 
+        | TDo _ -> Tconstr("Effect", [Tvar "Unit"]) 
+	| TLet (_,_,t) -> t
+	| TCase (_,_,t) -> t
+
+let set_new_type t = function
+        | TConstant (c,_) -> TConstant(c,t)
+	| TVariable (x, _) -> TVariable(x,t)
+	| TTypedExpression (e,t', _) -> TTypedExpression(e,t',t)
+	| TBinaryOperation (e1,binop,e2, _) -> TBinaryOperation (e1,binop,e2, t)
+	| TConditional (e1,e2,e3, _) -> TConditional (e1,e2,e3, t)
+        | TExplicitConstructor (x,l,_) -> TExplicitConstructor (x,l,t)
+	| TFunctionCall (f,i,e,_) -> TFunctionCall (f,i,e,t) 
+        | TDo l -> TDo l
+	| TLet (x,e,_) -> TLet(x,e,t)
+	| TCase (p,l,_) -> TCase(p,l,t)
+
 
 
 type tfile = TFile of (decl * t_def) list

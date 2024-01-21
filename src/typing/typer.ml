@@ -7,6 +7,7 @@ open TyperClasse
 open TyperInstance
 open PrettyPrinterBeta
 
+(*Fonction pour séparer les définitions d'une fonction des instructions suivantes dans une declaration de fonction*)
 let rec separe_defs_suite name l = match l with
         | [] -> ([],[])
         | Ast.Definition (Name(s,start_pos, end_pos),_,_) as d :: q when s=name -> 
@@ -14,6 +15,7 @@ let rec separe_defs_suite name l = match l with
 
         | _ -> ([], l)
 
+(*Fonction pour typer chacun des statements du programme*)
 let rec type_declarations g_env = function
         | [] -> ([],g_env)
 

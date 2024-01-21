@@ -36,5 +36,4 @@ let declaration_de_classe g_env = function
 								ajoute_g_env_fonction f vars [(c_name, List.map (fun v -> Tvar v) vars)] (List.map (bf g_env l_env) t_list) g_env_acc | _ -> failwith "Cas impossible"
 						) g_env fonctions
                                         in g_env
-                                        (*in ajoute_g_env_instance [] (c_name, List.map (fun v -> Tvar v) vars) g_env*)
     | _ -> failwith "Mauvais argument passé à declaration_de_classe"

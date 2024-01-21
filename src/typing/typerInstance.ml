@@ -5,12 +5,14 @@ open TyperFonction
 open TyperExpression
 open GestionEnv
 
+(*fonction pour séparer les définitions d'une instance de la suite du programme*)
 let rec decoupe_defs s = function
         | [] -> ([], [])
         | Ast.Definition (Name (s',_,_),_,_) as d :: q when s=s' -> 
                         let s_defs, suite = decoupe_defs s q in (d::s_defs, suite)
         | l -> ([], l)
 
+(*Fonction pour vérifier que chaque définition de fonction est composée d'équations successives*)
 let rec defs_successives decl_list = 
         match decl_list with
         | [] -> ()
@@ -26,6 +28,7 @@ let rec trouve_fun start_p end_p f = function
         | (g, vars, instances, tau_list) as res :: q when g=f -> res
         | _ :: q -> trouve_fun start_p end_p f q
 
+(*Fonction pour vérifier qu'une définition d'une fonction est conforme à sa déclaration dans la déclaration de la classe qui est instanciée *)
 let def_conforme g_env l_env start_p end_p def (f,vars,instances,tau_list) =
         let tau_list2, tau_ret = pop_dernier tau_list in        
         verification_definition g_env l_env [] tau_list2 tau_ret def
@@ -55,7 +58,6 @@ let declaration_d_instance g_env = function
                         List.iter (fun p -> match p with Ast.Definition ((Name (f,start_p,end_p)),pat_l, e) as d -> 
                                 let _ = def_conforme g_env l_env start_p end_p d (trouve_fun start_p end_p f funs) in () | _ -> failwith "Cas impossible") decl_list;
                         (*TODO* vérifier qu'il n'y a pas plusieurs instances unifiables*)
-                        (**)
                         begin
                         try 
                                 List.iter (resoud_instance g_env empty_env start_p end_p) instances;

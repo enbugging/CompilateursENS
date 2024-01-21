@@ -16,6 +16,7 @@ let rec unpack g_env l_env tau = match tau with
         end
         | _ -> tau
 
+(*Fonction qui vérifie que deux types sont unifiables et qui modifie la substitution courante pour les unifier*)
 let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) = 
         begin match (tau1,tau2) with
         | Tvar "_", _ -> ()
@@ -58,6 +59,7 @@ let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) =
         | _,_ -> raise (Error (start_p, end_p, "Expression du mauvais type\n"))
         end
 
+(*Fonction pour vérifier qu'un type est bien formé*)
 let rec bf g_env env = function
         | TypeIdent (Name (s,start_p,end_p)) -> 
                         begin
@@ -78,8 +80,8 @@ let rec bf g_env env = function
                                 | _ -> try Tconstr (name, List.map (bf g_env env) t_list)
                                         with _ -> raise (Error (start_p, end_p, "Unable to type "^name^" !"))
 
+(*Fonction pour résoudre une instance, cette fonction n'est pas correcte*)
 let rec resoud_instance g_env l_env start_p end_p i =
-        (*TODO Il faudrait peut-être utiliser sigma ?*)
         let i_name, tau_list = i in
         if trouve_l_env_instance l_env i || trouve_g_env_instance g_env i then
                 ()
@@ -90,6 +92,7 @@ let rec resoud_instance g_env l_env start_p end_p i =
                 else
                         raise (Error (start_p, end_p, "Impossible de résoudre l'instance "^i_name^" !"))
 
+(*Fonction pour typer un motif*)
 let rec type_motif g_env l_env start_p end_p = function
         | PatternArgument p -> begin match p with
                                 | PatargConstant (Integer _) -> Tint
@@ -116,9 +119,10 @@ let rec unpack_pattern p = match p with
         | PatternArgument (Pattern p') -> unpack_pattern p'
         | _ -> p
 
-        (*Les constructeurs d'arité 0 sont parsés comme des PatargIdent...*)
+(*Les constructeurs d'arité 0 sont parsés comme des PatargIdent et on ne trouve pas comment le résoudre au parsing*)
 let is_ident_constr y = Char.uppercase_ascii y.[0] = y.[0]
 
+(*Fonction pour vérifier qu'un type est filtré exhaustivement par une liste de patterns*)
 let rec filtrage_exhaustif g_env l_env start_p end_p (tau, lst) = 
         match (tau, lst) with
         | _, [] -> false
@@ -159,30 +163,6 @@ let rec filtrage_exhaustif g_env l_env start_p end_p (tau, lst) =
                                                 | PatternArgument (PatargIdent _) -> true
                                                 | _ -> false
                                                 ) l 
-
-let type_of_texpr = function	
-        | TConstant (_,t) -> t
-	| TVariable (_, t) -> t
-	| TTypedExpression (_,_, t) -> t
-	| TBinaryOperation (_,_,_, t) -> t
-	| TConditional (_,_,_, t) -> t
-        | TExplicitConstructor (_,_,t) -> t
-	| TFunctionCall (_,_,_,t) -> t 
-        | TDo _ -> Tconstr("Effect", [Tvar "Unit"]) 
-	| TLet (_,_,t) -> t
-	| TCase (_,_,t) -> t
-
-let set_new_type t = function
-        | TConstant (c,_) -> TConstant(c,t)
-	| TVariable (x, _) -> TVariable(x,t)
-	| TTypedExpression (e,t', _) -> TTypedExpression(e,t',t)
-	| TBinaryOperation (e1,binop,e2, _) -> TBinaryOperation (e1,binop,e2, t)
-	| TConditional (e1,e2,e3, _) -> TConditional (e1,e2,e3, t)
-        | TExplicitConstructor (x,l,_) -> TExplicitConstructor (x,l,t)
-	| TFunctionCall (f,i,e,_) -> TFunctionCall (f,i,e,t) 
-        | TDo l -> TDo l
-	| TLet (x,e,_) -> TLet(x,e,t)
-	| TCase (p,l,_) -> TCase(p,l,t)
 
 let rec type_expression g_env l_env expression = match expression with
         | {e=Constant c; location=(start_p,end_p)} -> 
