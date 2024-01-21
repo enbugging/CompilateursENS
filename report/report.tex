@@ -34,7 +34,7 @@
 		\item \texttt{file.purs}, the \texttt{.purs} file containing the source code in \texttt{PetitPurescript}. For further information, consult the documentation provided in \texttt{./doc}, title \texttt{sujet-v3.pdf}.
 	\end{itemize}
 	
-	\section{Functionalities}
+	\section{Report}
 	
 	\subsection{Syntactic analysis}
 	
@@ -43,9 +43,6 @@
 	Regarding the parsing error, however, the compile only reports the position of the error, and not the nature.
 	
 	\subsection{Typing analysis}
-	
-	\section{Difficulties}
-	
-	Over the course of the project, we found that unlike syntactic counterpart, typing analysis could not be naturally split into two parts and allowing collaboration. This raised significant difficulties toward the end of the first part of this project. Therefore, the typer is not functional for the deadline. It passes few tests, its code is concentrated in too few files and its error messages are not compliant.
+	Typing proved to be the most difficult and time-consuming part, which is why in order to create an operational compiler (at least on a non-zero part of the requested features) We preferred to move to code production despite the fact that it is not perfectly accomplished. Thus, even if it is only one test that it does not pass, it lacks some features such as checking that there are no two unifyable instances for example. The input point of the typing is the type\_file function of the typer.ml file, it takes as input the syntax ast tree and returns a typed ast tree provided with the global environment obtained at the end of typing. In order to have a code as clean and organized as possible Statements and expressions are typed by modules with corresponding names. Overall we tried to follow the subject as much as possible, whereby the functions have for the most part very explicit names . Finally, the environments are managed by lists and lists of associations and most of the questions with the envrionnements uses the functions of the module gestionEnv, in addition to better segmenting the code it should allow us to replace the lists and the lists of associations by Maps and Sets which we did not do for lack of time.	
 	
 \end{document}
