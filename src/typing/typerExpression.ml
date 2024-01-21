@@ -17,7 +17,7 @@ let rec unpack g_env l_env tau = match tau with
         | _ -> tau
 
 let rec unifie_sub sigma (start_p, end_p) (tau1,tau2) = 
-        let _ = print_string "\nLigne : "; print_string "\nOn unifie "; print_type tau1; print_string " avec "; print_type tau2 in begin match (tau1,tau2) with
+        begin match (tau1,tau2) with
         | Tvar "_", _ -> ()
         | Tvar tvar, _ -> begin match List.assoc_opt tvar !sigma with
                         | Some(Tvar tvar') -> let l' = List.filter (fun (a,b) -> a<>tvar) !sigma in sigma := (tvar, tau2)::l'
@@ -269,8 +269,6 @@ let rec type_expression g_env l_env expression = match expression with
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
                         let t_e_list = List.map (fun (e_i,tau_i) -> let t_e_i = type_expression g_env l_env e_i in unifie_sub sigma e_i.location (type_of_texpr t_e_i, tau_i); t_e_i) (try List.combine e_list tau_list with _ -> raise (Error (start_p, end_p, "Mauvais nombre d'arguments pour la fonction "^f^" !"))) in
-                        (*List.iter (fun (v,t) -> print_string v; print_string " : "; print_type t; print_string "\n") !sigma;*)
-                        (*let instances = List.map (fun (i, t_list) -> (i, List.map () t_list)) instances in*)
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
                         TFunctionCall(f, instances, t_e_list, substitution_type !sigma ret_type)
 

@@ -99,7 +99,6 @@ let type_of_var_l_env x start_p end_p env =
         with Not_found -> raise (Error (start_p,end_p, "Variable "^x^" not found in environment"))
     end
 
-(*l'environnement n'est pas utilisé, la fonction est peut-être mal utilisée*)
 let rec plus_precis env = function
         | _,Tvar _ -> true
         | Tvar _, _ -> true
