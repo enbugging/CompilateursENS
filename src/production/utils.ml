@@ -4,15 +4,6 @@ open X86_64
 
 module StringSet = Set.Make(String)
 
-(* Hash of list typ, return a string *)
-let rec hash_of_type t = 
-	match t with
-	| TypeConstructor (Name(ident,_,_),l) -> ident ^ hash_of_list_of_types l
-	| TypeIdent (Name(ident,_,_)) -> ident
-and hash_of_list_of_types types = List.fold_left (fun acc t -> acc ^ "_l_" ^ hash_of_type t ^ "_r") "" types
-
-(* Labels *)
-
 (* Modify a label if we need it to be unique, by set isUnique = true *)
 let unique_label ?(isUnique = false) label label_counter label_table = 
 	if not isUnique then 

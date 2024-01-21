@@ -14,12 +14,12 @@ let label_table = ref StringSet.empty
 let rec compile_stmt (code, data) statement = 
 	match statement with
 	| PTypeDeclaration (_, _, _, list_of_types_of_args, def) -> 
-		let hash_of_types_of_args = hash_of_list_of_types list_of_types_of_args in 
 		let PDefinition (ident, _, expr) = def in 
 		if ident = "main" then 
 			compile_expr env label_counter label_table (code ++ globl "main" ++ label "main", data) expr
-		else let new_label = ident ^ hash_of_types_of_args in
-			compile_expr env label_counter label_table (code ++ label new_label, data) expr
+		else let new_label = ident in
+			let (code, data) = compile_expr env label_counter label_table (code ++ label new_label, data) expr
+      in (code ++ popq rax ++ ret, data)
 	| PData _ -> (nop, nop) (* TODO *)
 	| PClass _ -> (nop, nop) 
 	| PInstance _ -> (nop, nop) (* TODO *)
