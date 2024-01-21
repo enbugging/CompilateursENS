@@ -46,7 +46,20 @@ let rec alloc_expr (env: local_env) (fpcur: int) = function
 	| TDo (e_list) -> let fpcur', e_list' = List.fold_left (fun (fpmax,l) e ->
                         let e', fpmax' = alloc_expr env fpcur e in (max fpmax fpmax', e'::l)) (fpcur,[]) e_list in PDo (e_list'), fpcur' 
 
-	| TLet (x_i_e_i_list, e, t) -> PConstant (Boolean false, Tbool), fpcur (*TODO*)
+	| TLet (x_i_e_i_list, e, t) -> 
+                        let fpmax = ref fpcur in
+                        let current_fpcur = ref fpcur in
+                        let current_env = ref env in
+                        let p_x_i_e_i_list = List.map (fun (x,e) -> 
+                                let e', fpmax1 = alloc_expr !current_env !current_fpcur e in 
+                                fpmax := max !fpmax fpmax1;
+                                current_env := Smap.add x (- (!current_fpcur)) !current_env;
+                                current_fpcur := 8 + !current_fpcur; 
+                                (-(!current_fpcur),e')
+                        ) x_i_e_i_list in
+                        let e', fpmax2 = alloc_expr !current_env !current_fpcur e in
+                        PLet(p_x_i_e_i_list,e',t), max !fpmax fpmax2
+
 	| TCase (e, l, t) -> PConstant (Boolean false, Tbool), fpcur (*TODO*)
 
 let alloc_def = function
