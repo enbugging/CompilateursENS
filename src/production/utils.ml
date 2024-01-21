@@ -182,3 +182,15 @@ let mod_code env (text, data) label_counter label_table =
     movq (imm 0) !%rax ++ (* Move 0 to rax *)
     ret
   in (text, data)
+
+(* For now, pure function is identity, although technically it should return the closure of identity. *)
+let pure_code env (text, data) label_counter label_table = 
+  let pure_label = unique_label "pure" label_counter label_table in
+  let text = text ++
+    label pure_label ++
+    pushq !%rbp ++
+    movq !%rsp !%rbp ++
+    movq !%rbp !%rsp ++
+    popq rbp ++
+    ret
+  in (text, data)
