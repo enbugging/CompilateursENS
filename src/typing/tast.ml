@@ -64,7 +64,6 @@ let init_g_env = {types = [("Unit",Tunit);("Boolean",Tbool);("Int",Tint);("Strin
         }
 
 
-(*type env = { instances : tinstance list; bindings : schema Smap.t; fvars : Vset.t }*)
 type env = {instances : tinstance list; vars : string list; vdecl : (string*typ) list }
 
 let empty_env = {instances = []; 

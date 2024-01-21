@@ -242,12 +242,20 @@ and compile_conditional env label_counter label_table (code, data) e =
         in (code, data)
     | e -> raise (Bad_type ("Conditional", find_type e))
 
+and compile_let env label_counter label_table (code, data) = function
+        | PLet (x_i_e_i_list, e, t) -> 
+                        let (code,data) = List.fold_left (fun acc (dec,e_i) -> let (code',data') = compile_expr env label_counter label_table acc e_i in
+                        (code' ++ popq rax ++ movq !%rax (ind ~ofs:dec rbp),data')
+                        ) (code,data) x_i_e_i_list in
+                        compile_expr env label_counter label_table (code,data) e
+        | e -> raise (Bad_type ("let", find_type e))
+
 and compile_expr env label_counter label_table (code, data) = function
     | PConstr _ | PConstant _ | PVariable _ | PTypedExpression _ as e -> compile_constant env label_counter label_table (code, data) e
     | PBinaryOperation _ as e -> compile_binop env label_counter label_table (code, data) e  
     | PFunctionCall _ as e -> compile_function_call env label_counter label_table (code, data) e    
     | PConditional _ as e -> compile_conditional env label_counter label_table (code, data) e
     | PDo l -> List.fold_right (fun e (code, data) -> compile_expr env label_counter label_table (code, data) e) l (code, data)
-    | PLet (l,e,t) -> (nop, nop) (*TODO*)
+    | PLet _ as e -> compile_let env label_counter label_table (code, data) e
     | PCase (e,l,t) -> (nop, nop) (*Todo "Case"*)
     | PExplicitConstructor (i,el,t) -> (nop, nop) (*Todo "Explicit constructor"*)
