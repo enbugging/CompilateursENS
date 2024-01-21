@@ -54,7 +54,6 @@ let rec compile_constant env label_counter label_table (code, data) = function
     | PConstant (Unit, _) -> (code,data) (*TODO*)
     | PVariable (x, _) -> 
         let code = code ++ 
-            (* Not sure if this is right *)
             movq (ind ~ofs:x rbp) !%rax ++ 
             pushq !%rax
         in (code, data)
@@ -109,6 +108,46 @@ and compile_binop env label_counter label_table (code, data) = function
             jmp positive_dividend_label ++
 
             label positive_dividend_label ++
+            pushq !%rax
+        in (code, data)
+    | PBinaryOperation (e1, And, e2, t) -> 
+        let label_false = unique_label ~isUnique:true "false" label_counter label_table in
+        let label_end = unique_label ~isUnique:true "end" label_counter label_table in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
+        let code = code ++
+            popq rax ++
+            cmpq (imm 0) !%rax ++
+            je label_false in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
+        let code = code ++
+            popq rax ++
+            cmpq (imm 0) !%rax ++
+            je label_false ++
+            movq (imm 1) !%rax ++
+            jmp label_end ++
+            label label_false ++
+            movq (imm 0) !%rax ++
+            label label_end ++
+            pushq !%rax
+        in (code, data)
+    | PBinaryOperation (e1, Or, e2, t) ->
+        let label_true = unique_label ~isUnique:true "true" label_counter label_table in
+        let label_end = unique_label ~isUnique:true "end" label_counter label_table in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e1 in 
+        let code = code ++
+            popq rax ++
+            cmpq (imm 0) !%rax ++
+            jne label_true in
+        let (code, data) = compile_expr env label_counter label_table (code, data) e2 in
+        let code = code ++
+            popq rax ++
+            cmpq (imm 0) !%rax ++
+            jne label_true ++
+            movq (imm 0) !%rax ++
+            jmp label_end ++
+            label label_true ++
+            movq (imm 1) !%rax ++
+            label label_end ++
             pushq !%rax
         in (code, data)
 
