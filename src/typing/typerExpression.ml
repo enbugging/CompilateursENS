@@ -184,18 +184,6 @@ let set_new_type t = function
 	| TLet (x,e,_) -> TLet(x,e,t)
 	| TCase (p,l,_) -> TCase(p,l,t)
 
-let rec hash_of_typed = function
-        | Tint -> "Int"
-        | Tstring -> "String"
-        | Tbool -> "Boolean"
-        | Tunit -> "Unit"
-        | Tvar s -> s
-        | QuantifTvar s -> s
-        | Teffect t -> "Effect_l_"^(hash_of_typed t)
-        | Tconstr(x,l) -> x ^ hash_of_list_of_typed l
-
-and hash_of_list_of_typed l = List.fold_left (fun acc t -> acc ^ "_l_" ^ hash_of_typed t ^ "_r") "" l
-
 let rec type_expression g_env l_env expression = match expression with
         | {e=Constant c; location=(start_p,end_p)} -> 
                         begin match c with
@@ -277,8 +265,6 @@ let rec type_expression g_env l_env expression = match expression with
                         
 	| {e=FunctionCall (f, e_list); location=(start_p,end_p)} ->
                         let f,vars, instances, tau_list = trouve_g_env_fonction f g_env start_p end_p in
-                        let f' = f ^ (hash_of_list_of_typed tau_list) in
-                        List.iter print_type tau_list;
                         let tau_list, ret_type = pop_dernier tau_list in
                         let sigma = ref (List.map (fun v -> (v, Tvar v)) vars) in
                         sigma := List.append !sigma (List.filter (fun (s,t) -> List.assoc_opt s !sigma = None) l_env.vdecl);
@@ -286,7 +272,7 @@ let rec type_expression g_env l_env expression = match expression with
                         (*Peut-être appliquer la substitution aux variables des instances avant d'essayer de les résoudre*)
                         (*List.iter (fun (v,t) -> print_string ("\nla variable "^v^" a le type: "); print_type t) !sigma;*)
                         List.iter (resoud_instance g_env l_env start_p end_p) instances;
-                        TFunctionCall(f', instances, t_e_list, substitution_type !sigma ret_type)
+                        TFunctionCall(f, instances, t_e_list, substitution_type !sigma ret_type)
 
 	| {e=Case (exp, case_list); location=(start_p,end_p)} ->
                         let t_exp = type_expression g_env l_env exp in

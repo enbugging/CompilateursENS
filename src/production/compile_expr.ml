@@ -143,7 +143,7 @@ and compile_binop env label_counter label_table (code, data) = function
                 | GreaterThanOrEqual -> setge !%al) ++
                 movzbq !%al rax ++
                 pushq !%rax
-            | t -> print_type t; raise (Bad_type ("Comparison operations", t))
+            | t -> (*print_type t;*) raise (Bad_type ("Comparison operations", t))
         in (code, data)
     | e -> raise (Bad_type ("Binary operation", find_type e))
 
@@ -169,7 +169,7 @@ and compile_function_call env label_counter label_table (code, data) = function
             in (code, data)
         | Tstring | Tconstr("String",[])->
             compile_expr env label_counter label_table (code, data) e
-        | t -> print_type t; raise (Bad_type ("Function call : Show", t))
+        | t -> (*print_type t;*) raise (Bad_type ("Function call : Show", t))
         end
     | PFunctionCall (f, _, args, t) ->
         let code = code ++ 
